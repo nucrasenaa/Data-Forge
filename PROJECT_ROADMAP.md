@@ -61,8 +61,8 @@ This document tracks the development progress of **Data Forge**. It serves as a 
 - [x] **Custom Themes & UI Customization**
     - [x] Integrated "Data Forge" Obsidian Theme
     - [x] Dynamic Glassmorphism effects
-- [ ] **Multi-Window Support**
-    - [ ] Ability to pop out a Query Tab into a new window
+- [x] **Multi-Window Support**
+    - [x] Ability to pop out a Query Tab into a new window
 
 ## 4. 🤖 AI Intelligence (Smart Assistance)
 *Goal: Leverage LLMs to speed up database tasks.*

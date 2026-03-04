@@ -11,5 +11,8 @@ contextBridge.exposeInMainWorld('electron', {
         procSnippet: (args) => ipcRenderer.invoke('db:procedure-snippet', args),
         getDDL: (args) => ipcRenderer.invoke('db:get-ddl', args),
         erd: (config) => ipcRenderer.invoke('db:erd', config)
+    },
+    window: {
+        open: (args) => ipcRenderer.invoke('window:open', args)
     }
 });

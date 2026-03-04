@@ -1,7 +1,38 @@
-const { ipcMain } = require('electron');
+const { ipcMain, BrowserWindow, screen, app } = require('electron');
 const { getDbProxy } = require('./db');
 
+const isDev = !app.isPackaged;
+
 function setupIpcHandlers() {
+    // 0. Open new window (Multi-Window Support)
+    ipcMain.handle('window:open', async (event, { url, title, width = 1200, height = 800 }) => {
+        try {
+            const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize;
+            const win = new BrowserWindow({
+                width: Math.min(width, sw),
+                height: Math.min(height, sh),
+                title: title || 'Data Forge',
+                backgroundColor: '#0f172a',
+                webPreferences: {
+                    nodeIntegration: false,
+                    contextIsolation: true,
+                    preload: require('path').join(__dirname, 'preload.js'),
+                },
+                show: false,
+            });
+
+            const fullUrl = isDev
+                ? `http://localhost:3000${url}`
+                : `app://local${url}`;
+
+            win.loadURL(fullUrl);
+            win.once('ready-to-show', () => win.show());
+            return { success: true };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
+    });
+
     // 1. Test Connection
     ipcMain.handle('db:test', async (event, config) => {
         try {

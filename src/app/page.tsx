@@ -14,6 +14,7 @@ import VisualQueryBuilder from '@/components/VisualQueryBuilder';
 import ExecutionPlan from '@/components/ExecutionPlan';
 import ERDiagram from '@/components/ERDiagram';
 import { saveToHistory } from '@/lib/history';
+import { popoutTab } from '@/lib/popout';
 
 interface ConnectionHistory {
   id: string;
@@ -719,12 +720,21 @@ export default function Home() {
               {tab.type === 'proc-designer' && <Zap className="w-3.5 h-3.5 shrink-0 text-orange-400" />}
               {tab.type === 'er-diagram' && <Share2 className="w-3.5 h-3.5 shrink-0 text-blue-400" />}
               <span className="text-[10px] truncate uppercase tracking-[0.15em] font-black">{tab.title}</span>
-              <button
-                onClick={(e) => closeTab(tab.id, e)}
-                className="ml-auto opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/10 hover:text-red-500 rounded-md transition-all"
-              >
-                <X className="w-3 h-3" />
-              </button>
+              <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                <button
+                  onClick={(e) => { e.stopPropagation(); popoutTab(config, tab); }}
+                  className="p-1 hover:bg-accent/10 hover:text-accent rounded-md transition-all"
+                  title="Pop out to new window"
+                >
+                  <Maximize2 className="w-2.5 h-2.5" />
+                </button>
+                <button
+                  onClick={(e) => closeTab(tab.id, e)}
+                  className="p-1 hover:bg-red-500/10 hover:text-red-500 rounded-md transition-all"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
               {activeTabId === tab.id && (
                 <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-accent rounded-full shadow-glow" />
               )}
