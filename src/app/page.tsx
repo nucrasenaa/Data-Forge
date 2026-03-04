@@ -11,6 +11,7 @@ import { apiRequest } from '@/lib/api';
 import TableDesigner from '@/components/TableDesigner';
 import ImportWizard from '@/components/ImportWizard';
 import VisualQueryBuilder from '@/components/VisualQueryBuilder';
+import { saveToHistory } from '@/lib/history';
 
 interface ConnectionHistory {
   id: string;
@@ -164,6 +165,7 @@ export default function Home() {
     const currentSortCol = options.sortCol || currentTab?.sortColumn;
     const currentSortDir = options.sortD || currentTab?.sortDir || 'ASC';
 
+    const startTime = Date.now();
     try {
       const data = await apiRequest('/api/db/query', 'POST', {
         config: { ...config, database: targetDb },
@@ -176,6 +178,15 @@ export default function Home() {
       });
 
       if (data.success) {
+        // Save to history
+        saveToHistory({
+          sql: query,
+          database: targetDb,
+          success: true,
+          executionTime: Date.now() - startTime,
+          rowsAffected: data.data?.length
+        });
+
         updateTab(targetTabId, {
           queryResult: {
             data: data.data,
@@ -188,10 +199,24 @@ export default function Home() {
           sortDir: currentSortDir
         });
       } else {
+        // Save failed query to history
+        saveToHistory({
+          sql: query,
+          database: targetDb,
+          success: false,
+          executionTime: Date.now() - startTime
+        });
         alert(data.message);
       }
     } catch (err) {
       console.error(err);
+      // Save error to history
+      saveToHistory({
+        sql: query,
+        database: targetDb,
+        success: false,
+        executionTime: Date.now() - startTime
+      });
       if (!options.silent) alert('Failed to execute query');
     } finally {
       if (!options.silent) updateTab(targetTabId, { loading: false });
@@ -278,6 +303,7 @@ export default function Home() {
       return;
     }
 
+    const startTime = Date.now();
     try {
       const data = await apiRequest('/api/db/get-ddl', 'POST', {
         config,
@@ -287,6 +313,15 @@ export default function Home() {
       });
 
       if (data.success) {
+        // Save to history
+        saveToHistory({
+          sql: data.script,
+          database: database,
+          success: true,
+          executionTime: Date.now() - startTime,
+          rowsAffected: 0 // DDL doesn't return rows affected in this context
+        });
+
         const newTab: Tab = {
           id: `ddl-${Date.now()}`,
           type: 'query',
@@ -304,10 +339,24 @@ export default function Home() {
         setTabs([...tabs, newTab]);
         setActiveTabId(newTab.id);
       } else {
+        // Save failed query to history
+        saveToHistory({
+          sql: `GET DDL FOR ${fullName} (${type})`, // Placeholder for failed DDL fetch
+          database: database,
+          success: false,
+          executionTime: Date.now() - startTime
+        });
         alert('Error fetching DDL: ' + data.message);
       }
     } catch (err: any) {
       console.error(err);
+      // Save failed query to history
+      saveToHistory({
+        sql: `GET DDL FOR ${fullName} (${type})`, // Placeholder for failed DDL fetch
+        database: database,
+        success: false,
+        executionTime: Date.now() - startTime
+      });
       alert('Error fetching DDL: ' + (err.message || 'Unknown error'));
     }
   };
@@ -323,15 +372,15 @@ export default function Home() {
     }
   };
 
-  const addQueryTab = () => {
+  const addQueryTab = useCallback((initialSql?: string) => {
     const id = `query-${Date.now()}`;
-    const dialect = config.dbType || 'mssql';
+    const dialect = config?.dbType || 'mssql';
     const newTab: Tab = {
       id,
       type: 'query',
       title: 'New Query',
-      database: config.database,
-      sqlQuery: dialect === 'mssql' ? 'SELECT TOP 100 * FROM ' : 'SELECT * FROM ',
+      database: config?.database,
+      sqlQuery: typeof initialSql === 'string' ? initialSql : (dialect === 'mssql' ? 'SELECT TOP 100 * FROM ' : 'SELECT * FROM '),
       queryResult: { data: [], columns: [], totalRows: 0 },
       loading: false,
       page: 1,
@@ -342,7 +391,16 @@ export default function Home() {
     };
     setTabs(prev => [...prev, newTab]);
     setActiveTabId(id);
-  };
+  }, [config, tabs.length]);
+
+  const handleRunHistoryQuery = useCallback((sql: string) => {
+    if (activeTab && activeTab.type === 'query') {
+      updateTab(activeTab.id, { sqlQuery: sql });
+      executeQuery(sql, { tabId: activeTab.id, db: activeTab.database, p: 1, includeCount: true });
+    } else {
+      addQueryTab(sql);
+    }
+  }, [activeTab, addQueryTab, executeQuery, updateTab]);
 
   const addDesignerTab = (type: 'table-designer' | 'view-designer' | 'proc-designer' | 'import-wizard' | 'query-builder') => {
     const id = `${type}-${Date.now()}`;
@@ -583,6 +641,7 @@ export default function Home() {
         selectedObject={activeTab?.title || null}
         onAddClick={addDesignerTab}
         onViewScript={handleViewScript}
+        onRunQuery={handleRunHistoryQuery}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -616,7 +675,7 @@ export default function Home() {
           ))}
 
           <button
-            onClick={addQueryTab}
+            onClick={() => addQueryTab()}
             className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-all ml-1"
             title="Open New Query"
           >

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, RotateCcw } from 'lucide-react';
+import { Play, RotateCcw, Bookmark } from 'lucide-react';
+import { saveBookmark } from '@/lib/history';
 import { Editor } from '@monaco-editor/react';
 
 interface QueryEditorProps {
@@ -115,6 +116,20 @@ export default function QueryEditor({ onExecute, loading, metadata, query, onQue
                 </div>
                 <div className="flex items-center gap-2">
                     <button
+                        onClick={() => {
+                            const name = prompt('Enter a name for this bookmark:');
+                            if (name) {
+                                saveBookmark(name, query);
+                                alert('Query bookmarked successfully!');
+                            }
+                        }}
+                        disabled={!query.trim()}
+                        className="p-1.5 hover:bg-amber-500/10 rounded-md transition-colors text-muted-foreground hover:text-amber-500 group"
+                        title="Save Bookmark"
+                    >
+                        <Bookmark className="w-4 h-4 group-hover:fill-current transition-all" />
+                    </button>
+                    <button
                         onClick={() => onQueryChange('')}
                         className="p-1.5 hover:bg-muted rounded-md transition-colors text-muted-foreground"
                         title="Clear"
@@ -151,6 +166,6 @@ export default function QueryEditor({ onExecute, loading, metadata, query, onQue
                     }}
                 />
             </div>
-        </div>
+        </div >
     );
 }

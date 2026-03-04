@@ -29,12 +29,12 @@ This document tracks the development progress of **Data Forge**. It serves as a 
 ## 2. ⌨️ SQL Editor Enhancement (Developer Productivity)
 *Goal: Provide a VS-Code-like experience for database administration.*
 
-- [ ] **Local Query History**
-    - [ ] Persistent log of executed queries (last 100)
-    - [ ] Searchable history panel
-- [ ] **Query Bookmarks & Snippets**
-    - [ ] Save frequently used queries with custom names
-    - [ ] Category-based management
+- [x] **Local Query History**
+    - [x] Persistent log of executed queries (last 100)
+    - [x] Searchable history panel
+- [x] **Query Bookmarks & Snippets**
+    - [x] Save frequently used queries with custom names
+    - [x] Category-based management
 - [ ] **Visual Execution Plan (Explain)**
     - [ ] Integration with `SET STATISTICS PROFILE ON` (MSSQL)
     - [ ] Visual node graph for Query Plan
