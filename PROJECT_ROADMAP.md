@@ -45,9 +45,9 @@ This document tracks the development progress of **Data Forge**. It serves as a 
 ## 3. 💎 Premium Aesthetics & UX (User Experience)
 *Goal: Make the app feel like a top-tier, enterprise-grade tool.*
 
-- [ ] **ER Diagram Viewer** (Next Focus)
-    - [ ] Auto-generate relationship graph from Foreign Keys
-    - [ ] Draggable/Interactive nodes
+- [x] **ER Diagram Viewer** (Next Focus)
+    - [x] Auto-generate relationship graph from Foreign Keys
+    - [x] Draggable/Interactive nodes
 - [x] **Premium Design System**
     - [x] Obsidian-Glass aesthetic & Backdrop blur
     - [x] High-contrast Dark mode with Sapphire accents

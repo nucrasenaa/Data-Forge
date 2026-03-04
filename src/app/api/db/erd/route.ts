@@ -52,7 +52,8 @@ export async function POST(req: NextRequest) {
                         IS_NULLABLE = 'YES' AS \`Nullable\`,
                         COLUMN_KEY = 'PRI' AS \`PK\`
                     FROM INFORMATION_SCHEMA.COLUMNS
-                    WHERE TABLE_SCHEMA = '${config.database}'
+                    WHERE TABLE_SCHEMA = COALESCE(NULLIF('${config.database || ''}', ''), DATABASE(), TABLE_SCHEMA)
+                      AND TABLE_SCHEMA NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys')
                     ORDER BY TABLE_NAME, ORDINAL_POSITION
                 `;
                 const fksQuery = `
@@ -62,7 +63,8 @@ export async function POST(req: NextRequest) {
                         REFERENCED_TABLE_NAME AS \`ReferencedTable\`,
                         REFERENCED_COLUMN_NAME AS \`ReferencedColumn\`
                     FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-                    WHERE TABLE_SCHEMA = '${config.database}'
+                    WHERE TABLE_SCHEMA = COALESCE(NULLIF('${config.database || ''}', ''), DATABASE(), TABLE_SCHEMA)
+                      AND TABLE_SCHEMA NOT IN ('information_schema', 'mysql', 'performance_schema', 'sys')
                       AND REFERENCED_TABLE_NAME IS NOT NULL
                 `;
                 tablesResult = await dbProxy.query(tablesQuery);

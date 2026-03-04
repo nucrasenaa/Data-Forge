@@ -936,6 +936,7 @@ export default function Home() {
               ) : activeTab.type === 'query-builder' ? (
                 <VisualQueryBuilder
                   metadata={metadata || {}}
+                  config={config}
                   onExecute={(sql) => {
                     // Create a new query tab with this SQL
                     const id = `q-${Date.now()}`;
