@@ -19,16 +19,49 @@ function setupIpcHandlers() {
             const dialect = config.dbType || 'mssql';
             if (!query) throw new Error('Query is required');
 
-            const trimmedQuery = query.trim();
-            const isSelect = trimmedQuery.toUpperCase().startsWith('SELECT');
-            let finalQuery = trimmedQuery;
+            const actualQuery = query.trim();
+            const isExplain = actualQuery.startsWith('EXPLAIN_PLAN:');
+            const queryToExec = isExplain ? actualQuery.replace('EXPLAIN_PLAN:', '').trim() : actualQuery;
+            const isSelect = queryToExec.toUpperCase().startsWith('SELECT');
+
+            let finalQuery = queryToExec;
             let totalRows = 0;
 
             const dbProxy = await getDbProxy(config);
             try {
-                if (isSelect && !trimmedQuery.toUpperCase().includes('OFFSET') && !trimmedQuery.toUpperCase().includes('LIMIT') && !trimmedQuery.toUpperCase().includes('GROUP BY')) {
+                if (isExplain) {
+                    let planData = [];
+                    let actualData = [];
+
+                    if (dialect === 'mssql') {
+                        // Combine into a single batch to ensure session state for STATISTICS PROFILE
+                        const results = await dbProxy.query(`SET STATISTICS PROFILE ON;\n${queryToExec};\nSET STATISTICS PROFILE OFF;`);
+                        const hasMultipleSets = Array.isArray(results) && results.length > 1;
+                        planData = hasMultipleSets ? results[1] : (Array.isArray(results) ? results[0] : []);
+                        actualData = hasMultipleSets ? results[0] : [];
+                    } else if (dialect === 'postgres') {
+                        planData = await dbProxy.query(`EXPLAIN (ANALYZE, FORMAT JSON) ${queryToExec}`);
+                    } else if (dialect === 'mysql' || dialect === 'mariadb') {
+                        planData = await dbProxy.query(`EXPLAIN ${queryToExec}`);
+                    }
+
+                    return {
+                        success: true,
+                        data: actualData,
+                        executionPlan: planData,
+                        totalRows: actualData.length,
+                        columns: actualData.length > 0 ? Object.keys(actualData[0]) : [],
+                        page,
+                        pageSize
+                    };
+                }
+
+                const isMultiStatement = queryToExec.trim().split(';').filter(s => s.trim().length > 0).length > 1;
+
+                // Apply pagination logic for SINGLE SELECT queries only
+                if (!isExplain && !isMultiStatement && isSelect && !queryToExec.toUpperCase().includes('OFFSET') && !queryToExec.toUpperCase().includes('LIMIT') && !queryToExec.toUpperCase().includes('GROUP BY')) {
                     const offset = (page - 1) * pageSize;
-                    let baseQuery = trimmedQuery.replace(/;$/, '');
+                    let baseQuery = queryToExec.replace(/;$/, '');
                     if (dialect === 'mssql') {
                         baseQuery = baseQuery.replace(/SELECT\s+TOP\s+\d+/i, 'SELECT');
                     } else {
@@ -56,11 +89,32 @@ function setupIpcHandlers() {
                     }
                 }
 
-                const data = await dbProxy.query(finalQuery);
-                const rows = Array.isArray(data) ? data : [data].filter(Boolean);
+                const results = await dbProxy.query(finalQuery);
+
+                // Detect if results is an array of recordsets (multi-result set)
+                const isMultiSet = Array.isArray(results) && results.length > 1 && Array.isArray(results[0]);
+
+                if (isMultiSet) {
+                    const resultSets = results.map(set => ({
+                        data: set,
+                        columns: set.length > 0 ? Object.keys(set[0]) : [],
+                        totalRows: set.length
+                    }));
+
+                    return {
+                        success: true,
+                        isMultiSet: true,
+                        resultSets,
+                        page,
+                        pageSize
+                    };
+                }
+
+                const rows = Array.isArray(results) ? results : [results].filter(Boolean);
 
                 return {
                     success: true,
+                    isMultiSet: false,
                     data: rows,
                     totalRows: totalRows || rows.length,
                     columns: rows.length > 0 ? Object.keys(rows[0]) : [],

@@ -58,6 +58,21 @@ export default function Sidebar({ config, onObjectSelect, onMetadataLoad, select
         'root-databases': true,
     });
 
+    const searchRef = React.useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const handleFocusSearch = () => {
+            setActiveTab('explorer');
+            setTimeout(() => {
+                searchRef.current?.focus();
+                searchRef.current?.select();
+            }, 50);
+        };
+
+        window.addEventListener('focus-search', handleFocusSearch);
+        return () => window.removeEventListener('focus-search', handleFocusSearch);
+    }, []);
+
     const fetchDatabases = async () => {
         setLoading(true);
         try {
@@ -358,6 +373,7 @@ export default function Sidebar({ config, onObjectSelect, onMetadataLoad, select
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                             <input
+                                ref={searchRef}
                                 type="text"
                                 placeholder="Search all databases..."
                                 className="w-full bg-muted/30 border border-border/50 rounded-lg pl-9 pr-3 py-2 text-[11px] focus:outline-none focus:ring-1 focus:ring-accent/50 transition-all font-medium"

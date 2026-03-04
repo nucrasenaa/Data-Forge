@@ -11,6 +11,7 @@ import { apiRequest } from '@/lib/api';
 import TableDesigner from '@/components/TableDesigner';
 import ImportWizard from '@/components/ImportWizard';
 import VisualQueryBuilder from '@/components/VisualQueryBuilder';
+import ExecutionPlan from '@/components/ExecutionPlan';
 import { saveToHistory } from '@/lib/history';
 
 interface ConnectionHistory {
@@ -27,13 +28,21 @@ interface ConnectionHistory {
   rememberPassword?: boolean;
 }
 
+interface ResultSet {
+  data: any[];
+  columns: string[];
+  totalRows: number;
+}
+
 interface Tab {
   id: string;
   type: 'table' | 'query' | 'table-designer' | 'view-designer' | 'proc-designer' | 'import-wizard' | 'query-builder';
   title: string;
   database: string;
   sqlQuery: string;
-  queryResult: { data: any[], columns: string[], totalRows: number };
+  queryResult: ResultSet;
+  resultSets?: ResultSet[];
+  activeResultSetIndex?: number;
   loading: boolean;
   page: number;
   pageSize: number;
@@ -41,6 +50,8 @@ interface Tab {
   sortDir: 'ASC' | 'DESC';
   filter: string;
   showFilter: boolean;
+  executionPlan?: any[];
+  showPlan?: boolean;
 }
 
 export default function Home() {
@@ -89,6 +100,38 @@ export default function Home() {
       }
     }
   }, []);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + T -> New Query Tab (only if connected)
+      if ((e.metaKey || e.ctrlKey) && e.key === 't' && config) {
+        e.preventDefault();
+        addQueryTab();
+      }
+
+      // Cmd/Ctrl + W -> Close current Tab
+      if ((e.metaKey || e.ctrlKey) && e.key === 'w' && activeTabId) {
+        e.preventDefault();
+        closeTab(activeTabId);
+      }
+
+      // Cmd/Ctrl + P -> Quick Search Focus
+      if ((e.metaKey || e.ctrlKey) && e.key === 'p' && config) {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('focus-search'));
+      }
+
+      // Cmd/Ctrl + R -> Reload Data
+      if ((e.metaKey || e.ctrlKey) && e.key === 'r' && config && activeTab) {
+        e.preventDefault();
+        reloadData();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [config, activeTabId, activeTab]);
 
   const handleConnect = (newConfig: any) => {
     setConfig(newConfig);
@@ -187,12 +230,20 @@ export default function Home() {
           rowsAffected: data.data?.length
         });
 
-        updateTab(targetTabId, {
-          queryResult: {
-            data: data.data,
-            columns: data.columns,
+        const mainResult = data.isMultiSet && data.resultSets && data.resultSets.length > 0
+          ? data.resultSets[0]
+          : {
+            data: data.data || [],
+            columns: data.columns || [],
             totalRows: options.includeCount ? data.totalRows : (currentTab?.queryResult.totalRows || 0)
-          },
+          };
+
+        updateTab(targetTabId, {
+          queryResult: mainResult,
+          resultSets: data.isMultiSet ? data.resultSets : undefined,
+          activeResultSetIndex: data.isMultiSet ? 0 : undefined,
+          executionPlan: data.executionPlan,
+          showPlan: !!data.executionPlan,
           page: currentPage,
           pageSize: currentPageSize,
           sortColumn: currentSortCol,
@@ -705,27 +756,77 @@ export default function Home() {
                   <QueryEditor
                     query={activeTab.sqlQuery}
                     onQueryChange={(q) => updateTab(activeTab.id, { sqlQuery: q })}
-                    onExecute={() => executeQuery(activeTab.sqlQuery, { tabId: activeTab.id, includeCount: true })}
+                    onExecute={(q) => executeQuery(q || activeTab.sqlQuery, { tabId: activeTab.id, includeCount: true })}
                     loading={activeTab.loading}
                     metadata={metadata}
                     dbType={config.dbType}
                   />
-                  <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-                    <DataTable
-                      data={activeTab.queryResult.data}
-                      columns={activeTab.queryResult.columns}
-                      loading={activeTab.loading}
-                      page={activeTab.page}
-                      pageSize={activeTab.pageSize}
-                      totalRows={activeTab.queryResult.totalRows}
-                      onPageChange={handlePageChange}
-                      onPageSizeChange={handlePageSizeChange}
-                      onSort={handleSort}
-                      sortColumn={activeTab.sortColumn}
-                      sortDir={activeTab.sortDir}
-                      onUpdate={handleUpdate} // Query tabs can also have editable results if they are simple selects
-                      allowEdit={true} // Allow editing in query results too
-                    />
+                  <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative">
+                    {activeTab.resultSets && activeTab.resultSets.length > 1 && !activeTab.showPlan && (
+                      <div className="flex items-center gap-1 px-4 py-1.5 bg-muted/20 border-b border-border shrink-0">
+                        {activeTab.resultSets.map((set, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => updateTab(activeTab.id, {
+                              queryResult: set,
+                              activeResultSetIndex: idx
+                            })}
+                            className={cn(
+                              "px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] rounded-lg transition-all border",
+                              activeTab.activeResultSetIndex === idx
+                                ? "bg-accent/10 border-accent/30 text-accent shadow-sm"
+                                : "border-transparent text-muted-foreground hover:bg-muted"
+                            )}
+                          >
+                            Result {idx + 1}
+                            <span className="ml-2 opacity-50 font-mono text-[8px]">{set.data.length}r</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeTab.executionPlan && activeTab.executionPlan.length > 0 && (
+                      <div className="absolute top-4 right-8 z-10 flex gap-1 bg-card/80 backdrop-blur-md border border-border rounded-xl p-1 shadow-2xl shadow-black/20 animate-in fade-in zoom-in duration-300">
+                        <button
+                          onClick={() => updateTab(activeTab.id, { showPlan: false })}
+                          className={cn(
+                            "px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] rounded-lg transition-all",
+                            !activeTab.showPlan ? "bg-accent text-accent-foreground shadow-lg shadow-accent/20" : "hover:bg-muted text-muted-foreground"
+                          )}
+                        >
+                          Result Data
+                        </button>
+                        <button
+                          onClick={() => updateTab(activeTab.id, { showPlan: true })}
+                          className={cn(
+                            "px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] rounded-lg transition-all",
+                            activeTab.showPlan ? "bg-accent text-accent-foreground shadow-lg shadow-accent/20" : "hover:bg-muted text-muted-foreground"
+                          )}
+                        >
+                          Execution Plan
+                        </button>
+                      </div>
+                    )}
+
+                    {activeTab.showPlan && activeTab.executionPlan ? (
+                      <ExecutionPlan data={activeTab.executionPlan} dialect={config.dbType || 'mssql'} />
+                    ) : (
+                      <DataTable
+                        data={activeTab.queryResult.data}
+                        columns={activeTab.queryResult.columns}
+                        loading={activeTab.loading}
+                        page={activeTab.page}
+                        pageSize={activeTab.pageSize}
+                        totalRows={activeTab.queryResult.totalRows}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                        onSort={handleSort}
+                        sortColumn={activeTab.sortColumn}
+                        sortDir={activeTab.sortDir}
+                        onUpdate={handleUpdate}
+                        allowEdit={true}
+                      />
+                    )}
                   </div>
                 </div>
               ) : activeTab.type === 'table' ? (

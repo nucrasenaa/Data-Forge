@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, RotateCcw, Bookmark } from 'lucide-react';
+import { Play, RotateCcw, Bookmark, Network } from 'lucide-react';
 import { saveBookmark } from '@/lib/history';
 import { Editor } from '@monaco-editor/react';
 
@@ -27,6 +27,52 @@ export default function QueryEditor({ onExecute, loading, metadata, query, onQue
     };
 
     const handleEditorDidMount = (editor: any, monaco: any) => {
+        // Add custom actions / shortcuts
+        editor.addAction({
+            id: 'execute-query',
+            label: 'Execute SQL',
+            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
+            run: () => {
+                const val = editor.getValue();
+                if (val.trim()) onExecute(val);
+            }
+        });
+
+        editor.addAction({
+            id: 'save-bookmark',
+            label: 'Save Bookmark',
+            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+            run: () => {
+                const val = editor.getValue();
+                if (val.trim()) {
+                    const name = prompt('Enter a name for this bookmark:');
+                    if (name) {
+                        saveBookmark(name, val);
+                        alert('Query bookmarked successfully!');
+                    }
+                }
+            }
+        });
+
+        editor.addAction({
+            id: 'clear-editor',
+            label: 'Clear Editor',
+            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Backslash],
+            run: () => {
+                onQueryChange('');
+            }
+        });
+
+        editor.addAction({
+            id: 'explain-query',
+            label: 'Explain SQL',
+            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE],
+            run: () => {
+                const val = editor.getValue();
+                if (val.trim()) onExecute(`EXPLAIN_PLAN:${val}`);
+            }
+        });
+
         // Register SQL suggestions
         const provider = monaco.languages.registerCompletionItemProvider('sql', {
             provideCompletionItems: (model: any, position: any) => {
@@ -136,6 +182,18 @@ export default function QueryEditor({ onExecute, loading, metadata, query, onQue
                     >
                         <RotateCcw className="w-4 h-4" />
                     </button>
+                    <div className="h-4 w-px bg-border mx-1" />
+                    <button
+                        onClick={() => {
+                            if (query.trim()) onExecute(`EXPLAIN_PLAN:${query.trim()}`);
+                        }}
+                        disabled={loading || !query.trim()}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-muted hover:bg-muted/80 text-muted-foreground text-xs font-bold rounded-md transition-all group border border-border/50"
+                        title="Explain Plan (Cmd+E)"
+                    >
+                        <Network className="w-3.5 h-3.5 text-accent group-hover:scale-110 transition-transform" />
+                        Explain
+                    </button>
                     <button
                         onClick={() => onExecute(query)}
                         disabled={loading || !query.trim()}
@@ -166,6 +224,6 @@ export default function QueryEditor({ onExecute, loading, metadata, query, onQue
                     }}
                 />
             </div>
-        </div >
+        </div>
     );
 }

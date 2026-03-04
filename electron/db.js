@@ -8,7 +8,9 @@ async function getDbProxy(config) {
 
     if (dbType === 'mysql' || dbType === 'mariadb') {
         const connConfig = config.connectionString
-            ? config.connectionString
+            ? (config.connectionString.includes('multipleStatements=')
+                ? config.connectionString
+                : config.connectionString + (config.connectionString.includes('?') ? '&' : '?') + 'multipleStatements=true')
             : {
                 host: config.server,
                 port: config.port || 3306,

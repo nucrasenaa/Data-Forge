@@ -35,12 +35,12 @@ This document tracks the development progress of **Data Forge**. It serves as a 
 - [x] **Query Bookmarks & Snippets**
     - [x] Save frequently used queries with custom names
     - [x] Category-based management
-- [ ] **Visual Execution Plan (Explain)**
-    - [ ] Integration with `SET STATISTICS PROFILE ON` (MSSQL)
-    - [ ] Visual node graph for Query Plan
-- [ ] **Result Set Management**
-    - [ ] Support for multiple result sets (Grid scrolling)
-    - [ ] Named Result Tabs
+- [x] **Visual Execution Plan (Explain)**
+    - [x] Integration with `SET STATISTICS PROFILE ON` (MSSQL)
+    - [x] Visual hierarchical node tree for Query Plan
+- [x] **Result Set Management**
+    - [x] Support for multiple result sets (Tabbed Navigation)
+    - [x] Auto-indexing of results (Result 1, 2, ...)
 
 ## 3. 💎 Premium Aesthetics & UX (User Experience)
 *Goal: Make the app feel like a top-tier, enterprise-grade tool.*
@@ -48,10 +48,12 @@ This document tracks the development progress of **Data Forge**. It serves as a 
 - [ ] **ER Diagram Viewer**
     - [ ] Auto-generate relationship graph from Foreign Keys
     - [ ] Draggable/Interactive nodes
-- [ ] **Keyboard Shortcut System**
-    - [ ] `Cmd/Ctrl + Enter`: Run Query
-    - [ ] `Cmd/Ctrl + \`: Clear Results
-    - [ ] `Cmd/Ctrl + P`: Search Tables (Quick Open)
+- [x] **Keyboard Shortcut System**
+    - [x] `Cmd/Ctrl + Enter`: Run Query
+    - [x] `Cmd/Ctrl + \`: Clear Results
+    - [x] `Cmd/Ctrl + P`: Search Tables (Quick Open Focus)
+    - [x] `Cmd/Ctrl + T`: New Query Tab
+    - [x] `Cmd/Ctrl + W`: Close Current Tab
 - [ ] **Custom Themes**
     - [ ] Monaco Editor themes (Dracula, Monokai, Synthwave'84)
     - [ ] Transparent / Glassmorphism toggle

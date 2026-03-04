@@ -11,8 +11,10 @@ export async function getDbProxy(config: any): Promise<DbProxy> {
   const dbType = config.dbType || 'mssql';
 
   if (dbType === 'mysql' || dbType === 'mariadb') {
-    const connConfig = config.connectionString
-      ? config.connectionString
+    let connConfig = config.connectionString
+      ? (config.connectionString.includes('multipleStatements=')
+        ? config.connectionString
+        : config.connectionString + (config.connectionString.includes('?') ? '&' : '?') + 'multipleStatements=true')
       : {
         host: config.server,
         port: config.port || 3306,
