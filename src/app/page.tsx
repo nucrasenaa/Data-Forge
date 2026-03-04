@@ -200,6 +200,19 @@ export default function Home() {
 
   const handleObjectSelect = async (fullName: string, type: 'table' | 'view' | 'procedure' | 'synonym', databaseName?: string) => {
     const db = databaseName || config.database;
+
+    // Check if tab already exists for this object
+    const existingTab = tabs.find(t =>
+      (t.type === 'table' || t.type === 'query') &&
+      t.title === fullName &&
+      t.database === db
+    );
+
+    if (existingTab) {
+      setActiveTabId(existingTab.id);
+      return;
+    }
+
     const tabId = `tab-${fullName}-${Date.now()}`;
 
     // Create new tab
@@ -254,6 +267,17 @@ export default function Home() {
   };
 
   const handleViewScript = async (fullName: string, type: 'table' | 'view' | 'procedure', database: string) => {
+    const title = `DDL: ${fullName}`;
+    const existingTab = tabs.find(t =>
+      t.title === title &&
+      t.database === database
+    );
+
+    if (existingTab) {
+      setActiveTabId(existingTab.id);
+      return;
+    }
+
     try {
       const data = await apiRequest('/api/db/get-ddl', 'POST', {
         config,
@@ -266,7 +290,7 @@ export default function Home() {
         const newTab: Tab = {
           id: `ddl-${Date.now()}`,
           type: 'query',
-          title: `DDL: ${fullName.split('.').pop()}`,
+          title: `DDL: ${fullName}`,
           database: database,
           sqlQuery: data.script,
           queryResult: { data: [], columns: [], totalRows: 0 },
