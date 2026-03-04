@@ -294,12 +294,12 @@ export default function Sidebar({ config, onObjectSelect, onMetadataLoad, select
     }), [databases, dbMetadata, config.database]);
 
     return (
-        <div className="w-80 h-screen border-r border-border flex flex-col bg-card/30 glass">
+        <div className="w-80 h-screen border-r border-border flex flex-col bg-background/50 backdrop-blur-2xl">
             {/* Object Forge (Action Buttons) */}
             <div className="p-4 border-b border-border space-y-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                        <PlusCircle className="w-4 h-4 text-accent" />
+                    <h2 className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.3em] flex items-center gap-2">
+                        <PlusCircle className="w-3.5 h-3.5 text-accent" />
                         Object Forge
                     </h2>
                 </div>

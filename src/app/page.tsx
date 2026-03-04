@@ -697,7 +697,7 @@ export default function Home() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header / Tab Bar */}
-        <header className="h-14 border-b border-border bg-card/30 flex items-center px-4 shrink-0 overflow-x-auto no-scrollbar gap-1">
+        <header className="h-14 border-b border-border bg-background/80 backdrop-blur-md flex items-center px-4 shrink-0 overflow-x-auto no-scrollbar gap-1 relative z-50">
           {tabs.map((tab) => (
             <div
               key={tab.id}
@@ -705,8 +705,8 @@ export default function Home() {
               className={cn(
                 "group flex items-center gap-2 px-4 py-1.5 rounded-xl cursor-context-menu transition-all h-10 min-w-[120px] max-w-[200px] border relative",
                 activeTabId === tab.id
-                  ? "bg-accent/10 border-accent/20 text-accent font-bold"
-                  : "bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50"
+                  ? "bg-accent/5 border-accent/20 text-accent font-bold shadow-premium"
+                  : "border-transparent text-muted-foreground hover:bg-muted/30"
               )}
             >
               {tab.type === 'table' && <TableIcon className="w-3.5 h-3.5 shrink-0" />}
@@ -714,35 +714,37 @@ export default function Home() {
               {tab.type === 'table-designer' && <PlusCircle className="w-3.5 h-3.5 shrink-0 text-blue-400" />}
               {tab.type === 'view-designer' && <Layers className="w-3.5 h-3.5 shrink-0 text-purple-400" />}
               {tab.type === 'proc-designer' && <Zap className="w-3.5 h-3.5 shrink-0 text-orange-400" />}
-              <span className="text-[11px] truncate uppercase tracking-wider">{tab.title}</span>
+              <span className="text-[10px] truncate uppercase tracking-[0.15em] font-black">{tab.title}</span>
               <button
                 onClick={(e) => closeTab(tab.id, e)}
                 className="ml-auto opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/10 hover:text-red-500 rounded-md transition-all"
               >
                 <X className="w-3 h-3" />
               </button>
-              {activeTabId === tab.id && <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-accent rounded-full" />}
+              {activeTabId === tab.id && (
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-accent rounded-full shadow-glow" />
+              )}
             </div>
           ))}
 
           <button
             onClick={() => addQueryTab()}
-            className="p-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-all ml-1"
+            className="p-2.5 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-all ml-1"
             title="Open New Query"
           >
             <Plus className="w-4 h-4" />
           </button>
 
           <div className="ml-auto flex items-center gap-3">
-            <div className="flex flex-col items-end opacity-60">
-              <span className="text-[10px] font-black tracking-[0.2em] uppercase leading-none">Status</span>
-              <span className="text-[9px] font-mono font-bold text-emerald-400">ENCRYPTED</span>
+            <div className="flex flex-col items-end opacity-40">
+              <span className="text-[10px] font-black tracking-[0.2em] uppercase leading-none">Access Control</span>
+              <span className="text-[9px] font-mono font-bold text-emerald-500">ENCRYPTED LINK</span>
             </div>
             <button
               onClick={handleDisconnect}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-red-500/5 hover:bg-red-500/10 text-red-500 border border-red-500/10 text-[10px] font-black uppercase tracking-widest transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/5 hover:bg-red-500/10 text-red-500 border border-red-500/10 text-[9px] font-black uppercase tracking-[0.2em] transition-all"
             >
-              <LogOut className="w-3.5 h-3.5" /> Terminate Link
+              <LogOut className="w-3.5 h-3.5" /> Terminate
             </button>
           </div>
         </header>

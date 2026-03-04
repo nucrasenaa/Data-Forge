@@ -4,7 +4,18 @@ const { Pool: PgPool } = require('pg');
 const mssqlPkg = require('mssql');
 
 async function getDbProxy(config) {
-    const dbType = config.dbType || 'mssql';
+    let dbType = config.dbType;
+
+    // Auto-detect dbType from connectionString if missing
+    if (!dbType && config.connectionString) {
+        const cs = config.connectionString.toLowerCase();
+        if (cs.startsWith('mysql:')) dbType = 'mysql';
+        else if (cs.startsWith('mariadb:')) dbType = 'mariadb';
+        else if (cs.startsWith('postgres:') || cs.startsWith('postgresql:')) dbType = 'postgres';
+        else if (cs.startsWith('mssql:')) dbType = 'mssql';
+    }
+
+    dbType = dbType || 'mssql';
 
     if (dbType === 'mysql' || dbType === 'mariadb') {
         const connConfig = config.connectionString

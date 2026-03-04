@@ -52,7 +52,7 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
         setTestSuccess(false);
 
         try {
-            const data = await apiRequest('/api/db/test', 'POST', connMode === 'url' ? { connectionString: config.connectionString } : config);
+            const data = await apiRequest('/api/db/test', 'POST', connMode === 'url' ? { connectionString: config.connectionString, dbType: config.dbType } : config);
             if (data.success) {
                 setTestSuccess(true);
                 setTimeout(() => setTestSuccess(false), 3000);
@@ -73,7 +73,7 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
         setTestSuccess(false);
 
         try {
-            const data = await apiRequest('/api/db/test', 'POST', connMode === 'url' ? { connectionString: config.connectionString } : config);
+            const data = await apiRequest('/api/db/test', 'POST', connMode === 'url' ? { connectionString: config.connectionString, dbType: config.dbType } : config);
             if (data.success) {
                 onConnect(connMode === 'url' ? { ...config, server: config.connectionString.split('@')[1]?.split('/')[0] || 'MSSQL URL' } : config);
             } else {

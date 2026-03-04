@@ -211,7 +211,7 @@ export default function DataTable({
                                 <th
                                     key={col}
                                     onClick={() => onSort(col)}
-                                    className="px-4 py-3 font-semibold text-muted-foreground uppercase tracking-wider text-[10px] whitespace-nowrap border-r border-border/50 last:border-r-0 cursor-pointer hover:bg-muted transition-colors group min-w-[120px] max-w-[400px]"
+                                    className="px-4 py-3 font-semibold text-muted-foreground uppercase tracking-[0.2em] text-[9px] whitespace-nowrap border-r border-border/50 last:border-r-0 cursor-pointer hover:bg-muted transition-colors group min-w-[120px] max-w-[400px]"
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <span className="truncate">{col}</span>

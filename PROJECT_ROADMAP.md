@@ -45,18 +45,22 @@ This document tracks the development progress of **Data Forge**. It serves as a 
 ## 3. 💎 Premium Aesthetics & UX (User Experience)
 *Goal: Make the app feel like a top-tier, enterprise-grade tool.*
 
-- [ ] **ER Diagram Viewer**
+- [ ] **ER Diagram Viewer** (Next Focus)
     - [ ] Auto-generate relationship graph from Foreign Keys
     - [ ] Draggable/Interactive nodes
+- [x] **Premium Design System**
+    - [x] Obsidian-Glass aesthetic & Backdrop blur
+    - [x] High-contrast Dark mode with Sapphire accents
+    - [x] Professional typography & layout refinement
 - [x] **Keyboard Shortcut System**
     - [x] `Cmd/Ctrl + Enter`: Run Query
     - [x] `Cmd/Ctrl + \`: Clear Results
     - [x] `Cmd/Ctrl + P`: Search Tables (Quick Open Focus)
     - [x] `Cmd/Ctrl + T`: New Query Tab
     - [x] `Cmd/Ctrl + W`: Close Current Tab
-- [ ] **Custom Themes**
-    - [ ] Monaco Editor themes (Dracula, Monokai, Synthwave'84)
-    - [ ] Transparent / Glassmorphism toggle
+- [x] **Custom Themes & UI Customization**
+    - [x] Integrated "Data Forge" Obsidian Theme
+    - [x] Dynamic Glassmorphism effects
 - [ ] **Multi-Window Support**
     - [ ] Ability to pop out a Query Tab into a new window
 
