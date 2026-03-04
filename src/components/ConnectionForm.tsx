@@ -175,7 +175,7 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
                                     >
                                         <type.icon className={cn("w-6 h-6", config.dbType === type.id ? type.color : "text-muted-foreground")} />
                                         <span className={cn("text-[10px] font-black uppercase tracking-tighter", config.dbType === type.id ? "text-foreground" : "text-muted-foreground")}>
-                                            {type.label.split(' ')[0]}
+                                            {type.label}
                                         </span>
                                     </button>
                                 ))}

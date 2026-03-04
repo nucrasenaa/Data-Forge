@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { executeQuery } from '@/lib/db';
+import { getDbProxy } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
     try {
@@ -10,8 +10,13 @@ export async function POST(req: NextRequest) {
       WHERE TABLE_TYPE = 'BASE TABLE'
       ORDER BY TABLE_SCHEMA, TABLE_NAME
     `;
-        const result = await executeQuery(config, query);
-        return NextResponse.json({ success: true, tables: result.recordset });
+        const dbProxy = await getDbProxy(config);
+        try {
+            const result = await dbProxy.query(query);
+            return NextResponse.json({ success: true, tables: result });
+        } finally {
+            await dbProxy.close();
+        }
     } catch (error: any) {
         return NextResponse.json(
             { success: false, message: error.message || 'Failed to fetch tables' },

@@ -67,7 +67,7 @@ export default function DataTable({
     };
 
     const handleSave = async () => {
-        if (!editingCell || isSaving) return;
+        if (!editingCell || isSaving || !onUpdate) return;
 
         setIsSaving(true);
         const success = await onUpdate(
