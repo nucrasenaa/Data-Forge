@@ -546,7 +546,7 @@ export default function Home() {
           </div>
 
           <p className="text-center text-xs text-muted-foreground/40 font-mono uppercase tracking-[0.2em]">
-            GLO • ALO • MSSQL • SECURE • PERSISTENT
+            PostgreSQL • MySQL • MSSQL • SECURE • PERSISTENT
           </p>
 
           <footer className="pt-12 border-t border-border/50 flex flex-col items-center gap-6">

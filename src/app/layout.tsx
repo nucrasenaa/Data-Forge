@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Data Forge | GLO • ALO Premium Database Manager",
+  title: "Data Forge | Premium Database Manager",
   description: "A modern, high-performance database editor for MSSQL, PostgreSQL, and MySQL. Secure, persistent, and developer-friendly.",
-  keywords: ["SQL Editor", "Database Manager", "MSSQL", "PostgreSQL", "MySQL", "GLO", "ALO", "Three Man Dev"],
+  keywords: ["SQL Editor", "Database Manager", "MSSQL", "PostgreSQL", "MySQL", "Three Man Dev"],
   icons: {
     icon: '/icon.png',
     apple: '/icon.png',

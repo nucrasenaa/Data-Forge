@@ -1,8 +1,7 @@
-# Data Forge | GLO • ALO
-
+# Data Forge 
 Data Forge is a modern, high-performance database explorer and SQL editor built with Next.js and Electron. It provides a seamless, multi-tabbed interface for managing multiple database dialects including **SQL Server (MSSQL)**, **PostgreSQL**, **MySQL**, and **MariaDB**.
 
-Optimized for **GLO • ALO** environments, it allows for secure, persistent, and fast database management across desktop and web.
+Optimized for use environments, it allows for secure, persistent, and fast database management across desktop and web.
 
 ![App Icon](public/icon.png)
 
