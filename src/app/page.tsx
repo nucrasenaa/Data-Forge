@@ -1257,6 +1257,8 @@ export default function Home() {
             <span>Three Man Dev © 2026</span>
             <div className="w-1 h-1 rounded-full bg-border" />
             <span>Bangkok, Thailand</span>
+            <div className="w-1 h-1 rounded-full bg-border" />
+            <span className="text-accent/40">v1.1.0</span>
           </div>
           <a
             href="https://github.com/nucrasenaa/db-editor"
