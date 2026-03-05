@@ -13,8 +13,12 @@ import ImportWizard from '@/components/ImportWizard';
 import VisualQueryBuilder from '@/components/VisualQueryBuilder';
 import ExecutionPlan from '@/components/ExecutionPlan';
 import ERDiagram from '@/components/ERDiagram';
+import ServerMonitor from '@/components/ServerMonitor';
+import UserManager from '@/components/UserManager';
+import SchemaCompare from '@/components/SchemaCompare';
 import { saveToHistory } from '@/lib/history';
 import { popoutTab } from '@/lib/popout';
+import { Activity, Users, GitCompare } from 'lucide-react';
 
 interface ConnectionHistory {
   id: string;
@@ -38,7 +42,7 @@ interface ResultSet {
 
 interface Tab {
   id: string;
-  type: 'table' | 'query' | 'table-designer' | 'view-designer' | 'proc-designer' | 'import-wizard' | 'query-builder' | 'er-diagram';
+  type: 'table' | 'query' | 'table-designer' | 'view-designer' | 'proc-designer' | 'import-wizard' | 'query-builder' | 'er-diagram' | 'server-monitor' | 'user-manager' | 'schema-compare';
   title: string;
   database: string;
   sqlQuery: string;
@@ -455,7 +459,7 @@ export default function Home() {
     }
   }, [activeTab, addQueryTab, executeQuery, updateTab]);
 
-  const addDesignerTab = (type: 'table-designer' | 'view-designer' | 'proc-designer' | 'import-wizard' | 'query-builder') => {
+  const addDesignerTab = (type: 'table-designer' | 'view-designer' | 'proc-designer' | 'import-wizard' | 'query-builder' | 'server-monitor' | 'user-manager' | 'schema-compare') => {
     const id = `${type}-${Date.now()}`;
     const dialect = config.dbType || 'mssql';
     let title = 'New Table';
@@ -477,6 +481,12 @@ export default function Home() {
       title = 'Visual Builder';
     } else if (type === 'er-diagram' as any) {
       title = 'ER Architect';
+    } else if (type === 'server-monitor' as any) {
+      title = 'Server Monitor';
+    } else if (type === 'user-manager' as any) {
+      title = 'User Manager';
+    } else if (type === 'schema-compare' as any) {
+      title = 'Schema Diff';
     }
 
     const newTab: Tab = {
@@ -719,6 +729,9 @@ export default function Home() {
               {tab.type === 'view-designer' && <Layers className="w-3.5 h-3.5 shrink-0 text-purple-400" />}
               {tab.type === 'proc-designer' && <Zap className="w-3.5 h-3.5 shrink-0 text-orange-400" />}
               {tab.type === 'er-diagram' && <Share2 className="w-3.5 h-3.5 shrink-0 text-blue-400" />}
+              {tab.type === 'server-monitor' && <Activity className="w-3.5 h-3.5 shrink-0 text-emerald-400" />}
+              {tab.type === 'user-manager' && <Users className="w-3.5 h-3.5 shrink-0 text-indigo-400" />}
+              {tab.type === 'schema-compare' && <GitCompare className="w-3.5 h-3.5 shrink-0 text-orange-400" />}
               <span className="text-[10px] truncate uppercase tracking-[0.15em] font-black">{tab.title}</span>
               <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
                 <button
@@ -971,6 +984,12 @@ export default function Home() {
                 />
               ) : activeTab.type === 'er-diagram' ? (
                 <ERDiagram config={config} />
+              ) : activeTab.type === 'server-monitor' ? (
+                <ServerMonitor config={config} onClose={() => closeTab(activeTab.id)} />
+              ) : activeTab.type === 'user-manager' ? (
+                <UserManager config={config} onClose={() => closeTab(activeTab.id)} />
+              ) : activeTab.type === 'schema-compare' ? (
+                <SchemaCompare config={config} onClose={() => closeTab(activeTab.id)} />
               ) : null}
             </>
           ) : (

@@ -21,7 +21,10 @@ import {
     Share2,
     LayoutDashboard,
     Clock,
-    Bookmark
+    Bookmark,
+    Activity,
+    Users,
+    GitCompare
 } from 'lucide-react';
 import HistoryPanel from './HistoryPanel';
 import BookmarkPanel from './BookmarkPanel';
@@ -394,17 +397,38 @@ export default function Sidebar({ config, onObjectSelect, onMetadataLoad, select
                         )}
                     </div>
 
-                    {/* Data Utility Forge */}
+                    {/* Enterprise Forge */}
                     <div className="mx-3 mb-4 mt-auto pt-4 border-t border-border/30 space-y-3">
-                        <div className="flex items-center gap-2 px-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground/40">
-                            <Share2 className="w-2.5 h-2.5" /> Data Utility Forge
+                        <div className="flex items-center gap-2 px-2 text-[9px] font-black uppercase tracking-widest text-emerald-500/60">
+                            <Zap className="w-2.5 h-2.5" /> Enterprise Forge
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <button
-                                onClick={() => onAddClick('er-diagram' as any)}
-                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 transition-all group col-span-2"
+                                onClick={() => onAddClick('server-monitor' as any)}
+                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 transition-all group"
                             >
-                                <Share2 className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                                <Activity className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                                <span className="text-[8px] font-black uppercase tracking-tighter text-emerald-400/70">Health</span>
+                            </button>
+                            <button
+                                onClick={() => onAddClick('user-manager' as any)}
+                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-indigo-500/5 hover:bg-indigo-500/10 border border-indigo-500/10 transition-all group"
+                            >
+                                <Users className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+                                <span className="text-[8px] font-black uppercase tracking-tighter text-indigo-400/70">Users</span>
+                            </button>
+                            <button
+                                onClick={() => onAddClick('schema-compare' as any)}
+                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/10 transition-all group"
+                            >
+                                <GitCompare className="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" />
+                                <span className="text-[8px] font-black uppercase tracking-tighter text-orange-400/70">Diff</span>
+                            </button>
+                            <button
+                                onClick={() => onAddClick('er-diagram' as any)}
+                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 transition-all group"
+                            >
+                                <Share2 className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
                                 <span className="text-[8px] font-black uppercase tracking-tighter text-blue-400/70">Architect</span>
                             </button>
                             <button
@@ -413,13 +437,6 @@ export default function Sidebar({ config, onObjectSelect, onMetadataLoad, select
                             >
                                 <LayoutDashboard className="w-3.5 h-3.5 text-purple-400 group-hover:scale-110 transition-transform" />
                                 <span className="text-[8px] font-black uppercase tracking-tighter text-purple-400/70">Builder</span>
-                            </button>
-                            <button
-                                onClick={() => onAddClick('import-wizard')}
-                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 transition-all group"
-                            >
-                                <Upload className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-[8px] font-black uppercase tracking-tighter text-emerald-400/70">Import</span>
                             </button>
                         </div>
                     </div>

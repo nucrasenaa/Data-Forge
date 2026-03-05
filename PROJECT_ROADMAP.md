@@ -77,14 +77,16 @@ This document tracks the development progress of **Data Forge**. It serves as a 
 ## 5. 🏗 Advanced Enterprise Features
 *Goal: Tools for heavy-duty database management.*
 
-- [ ] **Schema Comparison**
-    - [ ] Compare Schema A vs Schema B
-    - [ ] Generate Diff / Migration Script
-- [ ] **Server Monitor & Log Viewer**
-    - [ ] Real-time CPU/Memory usage tracking
-    - [ ] Background Job / SQL Agent job monitor
-- [ ] **User & Permission Manager**
-    - [ ] Visual UI for managing DB Users, Roles, and Permissions
+- [x] **Schema Comparison**
+    - [x] Compare Schema A vs Schema B
+    - [x] Generate Diff / Migration Script
+- [x] **Server Monitor & Log Viewer**
+    - [x] Real-time CPU/Memory usage tracking
+    - [x] Background Job / SQL Agent job monitor (via Active Requests & Logs)
+    - [x] Live Error Log viewing (MSSQL)
+- [x] **User & Permission Manager**
+    - [x] Visual UI for managing DB Users, Roles, and Permissions
+    - [x] Granular permission inspection (MSSQL & PostgreSQL)
 
 ## 🏗 6. Schema Management & Creation (Designers)
 *Goal: Provide visual designers for creating and altering database objects.*

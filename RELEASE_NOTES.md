@@ -2,6 +2,54 @@
 
 ---
 
+## v0.5.0 — "Enterprise" Release
+**Released: March 5, 2026**
+
+This release focuses on heavy-duty database management, introducing the **Server Health Monitor** and **Live Log Viewer** for real-time diagnostics and performance tuning.
+
+---
+
+### 🆕 New Features
+
+#### 📈 Server Health Monitor (MSSQL)
+A real-time dashboard for monitoring the health and performance of your SQL Server instance. Visualize critical metrics without needing complex DMV queries.
+
+- **Real-time CPU Usage**: Track SQL Server CPU utilization vs. System CPU.
+- **Memory Pressure**: Monitor Buffer Cache Hit Ratio and Page Life Expectancy.
+- **Active Requests**: View currently executing queries, their status, wait types, and duration.
+- **Wait Statistics**: Identify bottlenecks (CPU, I/O, Memory, Network) at a glance.
+
+#### 📜 Live Log Viewer
+Stream database engine logs directly into a searchable, filtered interface.
+
+- **MSSQL Error Log**: Search and filter the SQL Server current Error Log.
+- **Auto-Refresh**: Poll for the latest entries to monitor startup or critical failures in real-time.
+
+#### 🛡️ Access Control Forge (User Manager)
+A visual interface for managing database users, roles, and permissions.
+
+- **Principal Inspection**: List all database users, roles, and Windows groups (MSSQL & PostgreSQL).
+- **Granular Permissions**: Inspect effective permissions and object-level rights for any selected user.
+- **Security Audit**: Identify superusers and members of built-in fixed server/database roles.
+
+#### ⚖️ Schema Architect Diff
+Structural analysis tool to identify divergences between two database schemas.
+
+- **Identify Missing Objects**: Detect tables that exist in Source but are missing in Target (and vice versa).
+- **Object-Level Diff**: Compare structure across multiple databases in a single instance.
+- **Synchronization SQL**: Automatically generate `CREATE` and `ALTER` stubs to synchronize structural changes.
+
+---
+
+### 🛠 Bug Fixes & Improvements
+
+- **Visual Query Builder — MSSQL Pagination Fix**: Fixed a critical "Invalid usage of the option NEXT" error when fetching columns for MSSQL tables. The system now correctly handles existing `ORDER BY` clauses to prevent double-sorting syntax errors.
+- **Visual Query Builder — PostgreSQL PK Detection**: Improved column fetching for PostgreSQL to correctly identify and highlight Primary Keys.
+- **PostgreSQL Pagination**: Standardized `LIMIT/OFFSET` logic for PostgreSQL across both Web and Electron backends.
+
+---
+
+
 ## v0.4.0 — "Architect" Release
 **Released: March 5, 2026**
 
