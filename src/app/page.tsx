@@ -718,58 +718,61 @@ export default function Home() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header / Tab Bar */}
-        <header className="h-14 border-b border-border bg-background/80 backdrop-blur-md flex items-center px-4 shrink-0 overflow-x-auto no-scrollbar gap-1 relative z-50">
-          {tabs.map((tab) => (
-            <div
-              key={tab.id}
-              onClick={() => setActiveTabId(tab.id)}
-              className={cn(
-                "group flex items-center gap-2 px-4 py-1.5 rounded-xl cursor-context-menu transition-all h-10 min-w-[120px] max-w-[200px] border relative",
-                activeTabId === tab.id
-                  ? "bg-accent/5 border-accent/20 text-accent font-bold shadow-premium"
-                  : "border-transparent text-muted-foreground hover:bg-muted/30"
-              )}
-            >
-              {tab.type === 'table' && <TableIcon className="w-3.5 h-3.5 shrink-0" />}
-              {tab.type === 'query' && <Terminal className="w-3.5 h-3.5 shrink-0" />}
-              {tab.type === 'table-designer' && <PlusCircle className="w-3.5 h-3.5 shrink-0 text-blue-400" />}
-              {tab.type === 'view-designer' && <Layers className="w-3.5 h-3.5 shrink-0 text-purple-400" />}
-              {tab.type === 'proc-designer' && <Zap className="w-3.5 h-3.5 shrink-0 text-orange-400" />}
-              {tab.type === 'er-diagram' && <Share2 className="w-3.5 h-3.5 shrink-0 text-blue-400" />}
-              {tab.type === 'server-monitor' && <Activity className="w-3.5 h-3.5 shrink-0 text-emerald-400" />}
-              {tab.type === 'user-manager' && <Users className="w-3.5 h-3.5 shrink-0 text-indigo-400" />}
-              {tab.type === 'schema-compare' && <GitCompare className="w-3.5 h-3.5 shrink-0 text-orange-400" />}
-              <span className="text-[10px] truncate uppercase tracking-[0.15em] font-black">{tab.title}</span>
-              <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
-                <button
-                  onClick={(e) => { e.stopPropagation(); popoutTab(config, tab); }}
-                  className="p-1 hover:bg-accent/10 hover:text-accent rounded-md transition-all"
-                  title="Pop out to new window"
-                >
-                  <Maximize2 className="w-2.5 h-2.5" />
-                </button>
-                <button
-                  onClick={(e) => closeTab(tab.id, e)}
-                  className="p-1 hover:bg-red-500/10 hover:text-red-500 rounded-md transition-all"
-                >
-                  <X className="w-3 h-3" />
-                </button>
+        {/* Header / Tab Bar */}
+        <header className="h-14 border-b border-border bg-background/80 backdrop-blur-md flex items-center px-4 shrink-0 overflow-hidden relative z-50">
+          <div className="flex-1 flex items-center overflow-x-auto no-scrollbar gap-1 mr-4 flex-nowrap h-full">
+            {tabs.map((tab) => (
+              <div
+                key={tab.id}
+                onClick={() => setActiveTabId(tab.id)}
+                className={cn(
+                  "group flex items-center shrink-0 gap-2 px-4 py-1.5 rounded-xl cursor-context-menu transition-all h-10 min-w-[120px] max-w-[200px] border relative",
+                  activeTabId === tab.id
+                    ? "bg-accent/5 border-accent/20 text-accent font-bold shadow-premium"
+                    : "border-transparent text-muted-foreground hover:bg-muted/30"
+                )}
+              >
+                {tab.type === 'table' && <TableIcon className="w-3.5 h-3.5 shrink-0" />}
+                {tab.type === 'query' && <Terminal className="w-3.5 h-3.5 shrink-0" />}
+                {tab.type === 'table-designer' && <PlusCircle className="w-3.5 h-3.5 shrink-0 text-blue-400" />}
+                {tab.type === 'view-designer' && <Layers className="w-3.5 h-3.5 shrink-0 text-purple-400" />}
+                {tab.type === 'proc-designer' && <Zap className="w-3.5 h-3.5 shrink-0 text-orange-400" />}
+                {tab.type === 'er-diagram' && <Share2 className="w-3.5 h-3.5 shrink-0 text-blue-400" />}
+                {tab.type === 'server-monitor' && <Activity className="w-3.5 h-3.5 shrink-0 text-emerald-400" />}
+                {tab.type === 'user-manager' && <Users className="w-3.5 h-3.5 shrink-0 text-indigo-400" />}
+                {tab.type === 'schema-compare' && <GitCompare className="w-3.5 h-3.5 shrink-0 text-orange-400" />}
+                <span className="text-[10px] truncate uppercase tracking-[0.15em] font-black">{tab.title}</span>
+                <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); popoutTab(config, tab); }}
+                    className="p-1 hover:bg-accent/10 hover:text-accent rounded-md transition-all"
+                    title="Pop out to new window"
+                  >
+                    <Maximize2 className="w-2.5 h-2.5" />
+                  </button>
+                  <button
+                    onClick={(e) => closeTab(tab.id, e)}
+                    className="p-1 hover:bg-red-500/10 hover:text-red-500 rounded-md transition-all"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+                {activeTabId === tab.id && (
+                  <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-accent rounded-full shadow-glow" />
+                )}
               </div>
-              {activeTabId === tab.id && (
-                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-accent rounded-full shadow-glow" />
-              )}
-            </div>
-          ))}
+            ))}
 
-          <button
-            onClick={() => addQueryTab()}
-            className="p-2.5 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-all ml-1"
-            title="Open New Query"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
+            <button
+              onClick={() => addQueryTab()}
+              className="p-2.5 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-all ml-1 shrink-0"
+              title="Open New Query"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="flex flex-col items-end opacity-40">
               <span className="text-[10px] font-black tracking-[0.2em] uppercase leading-none">Access Control</span>
               <span className="text-[9px] font-mono font-bold text-emerald-500">ENCRYPTED LINK</span>

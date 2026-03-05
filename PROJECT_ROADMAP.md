@@ -23,8 +23,9 @@ This document tracks the development progress of **Data Forge**. It serves as a 
 - [x] **Schema DDL Generator**
     - [x] "View Create Script" for Tables
     - [x] "View Create Script" for Views/Procedures
-- [x] **Import Wizard**
+- [ ] **Import Wizard**
     - [x] Import from CSV/JSON to existing tables
+    - [ ] Dynamic Column Metadata fetching (Fetch real table columns for mapping)
 
 ## 2. ⌨️ SQL Editor Enhancement (Developer Productivity)
 *Goal: Provide a VS-Code-like experience for database administration.*
@@ -83,7 +84,8 @@ This document tracks the development progress of **Data Forge**. It serves as a 
 - [ ] **SQL Fixer & Performance Optimizer**
     - [x] "Explain with AI": Human-readable analysis of slow execution plans
     - [x] Automatic syntax error correction suggestions
-    - [ ] Index optimization recommendations based on JOIN patterns (Integrated in AI Analysis)
+    - [x] Index optimization recommendations (Integrated in AI Analysis)
+    - [ ] Stand-alone Index Optimization engine (Dedicated performance advisor)
 
 ## 5. 🏗 Advanced Enterprise Features
 *Goal: Tools for heavy-duty database management.*
@@ -106,11 +108,15 @@ This document tracks the development progress of **Data Forge**. It serves as a 
     - [x] Column management (Name, Type, Nullability, Primary Key)
     - [x] Constraint manager (Foreign Keys, Uniques, Checks)
     - [x] Index designer
-- [x] **View Designer**
+- [ ] **View Designer**
     - [x] Query-based view creation with syntax validation
-- [x] **Procedure & Function Designer**
+    - [ ] Visual UI for column selection & Aliasing
+- [ ] **Procedure & Function Designer**
     - [x] Parameter definitions UI
     - [x] Template-based boilerplate generation
+    - [ ] Visual Logic block editor (Experimental)
+- [ ] **Global Designer Enhancements**
+    - [ ] Multi-database selector for all designers (Bridge to Enterprise Forge)
 
 ---
 
