@@ -37,7 +37,14 @@ export async function getDbProxy(config: any): Promise<DbProxy> {
     } : undefined;
 
     let connConfig: any = config.connectionString
-      ? { uri: config.connectionString, ssl: sslConfig, multipleStatements: true }
+      ? {
+        uri: config.connectionString,
+        ssl: sslConfig,
+        multipleStatements: true,
+        connectTimeout: 15000,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 10000
+      }
       : {
         host: actualHost,
         port: actualPort,
@@ -45,10 +52,24 @@ export async function getDbProxy(config: any): Promise<DbProxy> {
         password: config.password,
         database: config.database,
         multipleStatements: true,
-        ssl: sslConfig
+        ssl: sslConfig,
+        connectTimeout: 15000,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 10000
       };
 
-    const connection = await mysql.createConnection(connConfig);
+    let connection: any;
+    try {
+      connection = await mysql.createConnection(connConfig);
+    } catch (err: any) {
+      // Intermittent network issues (Tailscale/VPN) can cause timeouts. Retry once.
+      if (err.code === 'ETIMEDOUT' || err.code === 'ECONNREFUSED' || err.message.includes('timeout')) {
+        console.warn('MySQL Connection failed, retrying...', err.message);
+        connection = await mysql.createConnection(connConfig);
+      } else {
+        throw err;
+      }
+    }
 
     return {
       query: async (sql: string) => {
@@ -56,7 +77,7 @@ export async function getDbProxy(config: any): Promise<DbProxy> {
         return rows;
       },
       close: async () => {
-        await connection.end();
+        if (connection) await connection.end();
       }
     };
   } else if (dbType === 'postgres') {

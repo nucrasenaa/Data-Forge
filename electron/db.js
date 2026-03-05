@@ -32,7 +32,14 @@ async function getDbProxy(config) {
         } : undefined;
 
         const connConfig = config.connectionString
-            ? { uri: config.connectionString, ssl: sslConfig, multipleStatements: true }
+            ? {
+                uri: config.connectionString,
+                ssl: sslConfig,
+                multipleStatements: true,
+                connectTimeout: 15000,
+                enableKeepAlive: true,
+                keepAliveInitialDelay: 10000
+            }
             : {
                 host: actualHost,
                 port: actualPort,
@@ -40,10 +47,24 @@ async function getDbProxy(config) {
                 password: config.password,
                 database: config.database,
                 multipleStatements: true,
-                ssl: sslConfig
+                ssl: sslConfig,
+                connectTimeout: 15000,
+                enableKeepAlive: true,
+                keepAliveInitialDelay: 10000
             };
 
-        const connection = await mysql.createConnection(connConfig);
+        let connection;
+        try {
+            connection = await mysql.createConnection(connConfig);
+        } catch (err) {
+            // Retry once for network timeouts (VPN issues)
+            if (err.code === 'ETIMEDOUT' || err.code === 'ECONNREFUSED' || err.message.includes('timeout')) {
+                console.warn('MySQL Electron Reforging connection due to timeout...', err.message);
+                connection = await mysql.createConnection(connConfig);
+            } else {
+                throw err;
+            }
+        }
 
         return {
             query: async (sql) => {
@@ -51,7 +72,7 @@ async function getDbProxy(config) {
                 return rows;
             },
             close: async () => {
-                await connection.end();
+                if (connection) await connection.end();
             }
         };
     } else if (dbType === 'postgres') {
