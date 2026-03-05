@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { apiRequest } from '@/lib/api';
-import { Loader2, ZoomIn, ZoomOut, Maximize, RotateCcw, Database, Table as TableIcon, Share2, Square, Hash, Key } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize, RotateCcw, Database, Table as TableIcon, Share2, Square, Hash, Key, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ERDiagramProps {
@@ -29,6 +29,8 @@ interface Relationship {
 
 export default function ERDiagram({ config }: ERDiagramProps) {
     const [loading, setLoading] = useState(true);
+    const [databases, setDatabases] = useState<any[]>([]);
+    const [selectedDb, setSelectedDb] = useState(config.database);
     const [data, setData] = useState<{ tables: Record<string, TableMetadata[]>, relationships: Relationship[] }>({ tables: {}, relationships: [] });
     const [positions, setPositions] = useState<Record<string, { x: number, y: number }>>({});
     const [zoom, setZoom] = useState(1);
@@ -38,10 +40,11 @@ export default function ERDiagram({ config }: ERDiagramProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const lastMousePos = useRef({ x: 0, y: 0 });
 
-    const fetchERData = async () => {
+    const fetchERData = async (dbName?: string) => {
         setLoading(true);
+        const targetDb = dbName || selectedDb;
         try {
-            const res = await apiRequest('/api/db/erd', 'POST', config);
+            const res = await apiRequest('/api/db/erd', 'POST', { ...config, database: targetDb });
             if (res.success) {
                 const groupedTables: Record<string, TableMetadata[]> = {};
                 res.tables.forEach((row: any) => {
@@ -89,8 +92,26 @@ export default function ERDiagram({ config }: ERDiagramProps) {
     };
 
     useEffect(() => {
-        fetchERData();
+        const fetchDbs = async () => {
+            try {
+                const res = await apiRequest('/api/db/metadata', 'POST', config);
+                if (res.success) {
+                    setDatabases(res.metadata.databases);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchDbs();
     }, [config]);
+
+    useEffect(() => {
+        setSelectedDb(config.database);
+    }, [config.database]);
+
+    useEffect(() => {
+        fetchERData(selectedDb);
+    }, [selectedDb, config]);
 
     const handleMouseDown = (e: React.MouseEvent, tableKey?: string) => {
         if (tableKey) {
@@ -197,7 +218,23 @@ export default function ERDiagram({ config }: ERDiagramProps) {
                 </div>
             </div>
 
-            <div className="absolute top-6 right-6 z-20">
+            <div className="absolute top-6 right-6 z-20 flex items-center gap-3">
+                <div className="bg-card/80 backdrop-blur-xl border border-border px-3 py-1.5 rounded-2xl shadow-2xl flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <Database className="w-3.5 h-3.5 text-accent" />
+                        <select
+                            value={selectedDb}
+                            onChange={(e) => setSelectedDb(e.target.value)}
+                            className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-foreground focus:ring-0 cursor-pointer outline-none min-w-[120px]"
+                        >
+                            {databases.map(db => (
+                                <option key={db.name} value={db.name} className="bg-background text-foreground uppercase">{db.name}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="w-3 h-3 text-muted-foreground pointer-events-none -ml-6 mr-2" />
+                    </div>
+                </div>
+
                 <div className="bg-card/80 backdrop-blur-xl border border-border px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-3">
                     <div className="flex flex-col items-end">
                         <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Canvas Status</span>
@@ -215,11 +252,11 @@ export default function ERDiagram({ config }: ERDiagramProps) {
                     </div>
                     <div className="text-center space-y-2">
                         <h3 className="text-sm font-black uppercase tracking-[0.3em] text-muted-foreground/80">No Schema Detected</h3>
-                        <p className="text-[10px] text-muted-foreground/40 uppercase tracking-widest">The architect found no tables in the current context.</p>
+                        <p className="text-[10px] text-muted-foreground/40 uppercase tracking-widest">The architect found no tables in {selectedDb}.</p>
                     </div>
                     <button
-                        onClick={fetchERData}
-                        className="px-6 py-2 bg-accent/10 border border-accent/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-accent hover:bg-accent/20 transition-all"
+                        onClick={() => fetchERData(selectedDb)}
+                        className="px-6 py-2 bg-accent/10 border border-accent/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-accent hover:bg-accent/20 transition-all font-bold"
                     >
                         Re-scan Schema
                     </button>

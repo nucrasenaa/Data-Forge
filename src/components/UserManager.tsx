@@ -12,6 +12,7 @@ import {
     RefreshCw,
     ShieldAlert,
     ChevronRight,
+    ChevronDown,
     Loader2,
     Database
 } from 'lucide-react';
@@ -24,6 +25,8 @@ interface UserManagerProps {
 }
 
 export default function UserManager({ config, onClose }: UserManagerProps) {
+    const [databases, setDatabases] = useState<any[]>([]);
+    const [selectedDb, setSelectedDb] = useState(config.database);
     const [users, setUsers] = useState<any[]>([]);
     const [selectedUser, setSelectedUser] = useState<any | null>(null);
     const [userPermissions, setUserPermissions] = useState<any[]>([]);
@@ -31,16 +34,32 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
     const [refreshing, setRefreshing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const fetchUsers = useCallback(async (isRefresh = false) => {
+    useEffect(() => {
+        const fetchDbs = async () => {
+            try {
+                const res = await apiRequest('/api/db/metadata', 'POST', config);
+                if (res.success) {
+                    setDatabases(res.metadata.databases);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchDbs();
+    }, [config]);
+
+    const fetchUsers = useCallback(async (isRefresh = false, dbName?: string) => {
         if (isRefresh) setRefreshing(true);
         else setLoading(true);
 
+        const targetDb = dbName || selectedDb;
         try {
             const dialect = config?.dbType || 'mssql';
             let query = '';
 
             if (dialect === 'mssql') {
                 query = `
+                    USE [${targetDb}];
                     SELECT 
                         name as userName, 
                         type_desc as type, 
@@ -58,7 +77,7 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
                 query = `SELECT User as userName, Host as host FROM mysql.user ORDER BY User;`;
             }
 
-            const res = await apiRequest('/api/db/query', 'POST', { config, query });
+            const res = await apiRequest('/api/db/query', 'POST', { config: { ...config, database: targetDb }, query });
             if (res.success) {
                 setUsers(res.data || []);
             }
@@ -68,7 +87,7 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [config]);
+    }, [config, selectedDb]);
 
     const fetchUserDetails = async (user: any) => {
         setSelectedUser(user);
@@ -80,6 +99,7 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
 
             if (dialect === 'mssql') {
                 query = `
+                    USE [${selectedDb}];
                     SELECT 
                         dp.permission_name as [permission],
                         dp.state_desc as [state],
@@ -91,11 +111,11 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
                     ORDER BY dp.permission_name;
                 `;
             } else if (dialect === 'postgres') {
-                query = `SELECT table_catalog, table_schema, table_name, privilege_type FROM information_schema.role_table_grants WHERE grantee = '${user.userName}';`;
+                query = `SELECT table_catalog, table_schema, table_name, privilege_type FROM information_schema.role_table_grants WHERE grantee = '${user.userName}' AND table_catalog = '${selectedDb}';`;
             }
 
             if (query) {
-                const res = await apiRequest('/api/db/query', 'POST', { config, query });
+                const res = await apiRequest('/api/db/query', 'POST', { config: { ...config, database: selectedDb }, query });
                 if (res.success) {
                     setUserPermissions(res.data || []);
                 }
@@ -106,8 +126,8 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
     };
 
     useEffect(() => {
-        fetchUsers();
-    }, [fetchUsers]);
+        fetchUsers(false, selectedDb);
+    }, [fetchUsers, selectedDb]);
 
     const filteredUsers = users.filter(u =>
         u.userName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -122,24 +142,39 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
                         <Users className="w-5 h-5 text-indigo-500" />
                     </div>
                     <div>
-                        <h2 className="text-sm font-black uppercase tracking-widest leading-none mb-1">Access Control Forge</h2>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest">USER & PERMISSION MANAGEMENT</span>
+                        <h2 className="text-sm font-black uppercase tracking-widest leading-none mb-1">User & Permission Manager</h2>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest">ACCESS CONTROL FORGE</span>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => fetchUsers(true)}
-                        disabled={refreshing}
-                        className="p-2 hover:bg-muted rounded-xl text-muted-foreground transition-all"
-                    >
-                        <RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin")} />
-                    </button>
+                    <div className="bg-muted/50 border border-border px-3 py-1.5 rounded-xl flex items-center gap-2">
+                        <Database className="w-3.5 h-3.5 text-indigo-400" />
+                        <select
+                            value={selectedDb}
+                            onChange={(e) => setSelectedDb(e.target.value)}
+                            className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-foreground focus:ring-0 cursor-pointer outline-none min-w-[120px]"
+                        >
+                            {databases.map(db => (
+                                <option key={db.name} value={db.name} className="bg-background text-foreground uppercase">{db.name}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="w-3 h-3 text-muted-foreground pointer-events-none -ml-6 mr-2" />
+                    </div>
+
                     <button
                         onClick={onClose}
                         className="flex items-center gap-2 px-6 py-2 bg-muted hover:bg-muted/80 text-foreground text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
                     >
                         Close
+                    </button>
+                    <button
+                        onClick={() => fetchUsers(true)}
+                        disabled={refreshing}
+                        className="flex items-center gap-2 px-8 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-500/20"
+                    >
+                        {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                        Refresh
                     </button>
                 </div>
             </div>

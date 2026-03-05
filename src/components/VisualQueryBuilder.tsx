@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Check, Trash2, Table, Play, Settings2, FileCode, Search, PlusCircle, LayoutDashboard, Share2, Loader2, Key } from 'lucide-react';
+import { Check, Trash2, Table, Play, Settings2, FileCode, Search, PlusCircle, LayoutDashboard, Share2, Loader2, Key, Database, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/api';
 
@@ -19,13 +19,52 @@ interface ColumnInfo {
     isNullable: boolean;
 }
 
-export default function VisualQueryBuilder({ metadata, config, onExecute, onClose }: VisualQueryBuilderProps) {
+export default function VisualQueryBuilder({ metadata: initialMetadata, config, onExecute, onClose }: VisualQueryBuilderProps) {
+    const [databases, setDatabases] = useState<any[]>([]);
+    const [selectedDb, setSelectedDb] = useState(config.database);
+    const [currentMetadata, setCurrentMetadata] = useState<any>(initialMetadata);
     const [selectedTables, setSelectedTables] = useState<string[]>([]);
     const [selectedColumns, setSelectedColumns] = useState<Record<string, string[]>>({});
     const [searchTerm, setSearchTerm] = useState('');
     // key = table name, value = list of columns with metadata
     const [tableColumns, setTableColumns] = useState<Record<string, ColumnInfo[]>>({});
     const [loadingTable, setLoadingTable] = useState<string | null>(null);
+    const [loadingMetadata, setLoadingMetadata] = useState(false);
+
+    React.useEffect(() => {
+        const fetchDbs = async () => {
+            try {
+                const res = await apiRequest('/api/db/metadata', 'POST', config);
+                if (res.success) {
+                    setDatabases(res.metadata.databases);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchDbs();
+    }, [config]);
+
+    React.useEffect(() => {
+        const fetchMetadata = async () => {
+            if (selectedDb === config.database) {
+                setCurrentMetadata(initialMetadata);
+                return;
+            }
+            setLoadingMetadata(true);
+            try {
+                const res = await apiRequest('/api/db/metadata', 'POST', { ...config, database: selectedDb });
+                if (res.success) {
+                    setCurrentMetadata(res.metadata);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoadingMetadata(false);
+            }
+        };
+        fetchMetadata();
+    }, [selectedDb, config, initialMetadata]);
 
     const fetchColumnsForTable = async (tableMeta: any) => {
         if (!config) return;
@@ -38,7 +77,7 @@ export default function VisualQueryBuilder({ metadata, config, onExecute, onClos
             let query = '';
 
             if (dialect === 'mysql' || dialect === 'mariadb') {
-                const schemaName = tableMeta.schema || config.database || '';
+                const schemaName = tableMeta.schema || selectedDb || '';
                 const tableName = tableMeta.name;
                 // Use unquoted column names to avoid backtick-in-template-literal issues
                 query = `SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_KEY FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${tableName}'${schemaName ? ` AND TABLE_SCHEMA = '${schemaName}'` : ` AND TABLE_SCHEMA = DATABASE()`} ORDER BY ORDINAL_POSITION`;
@@ -64,11 +103,11 @@ export default function VisualQueryBuilder({ metadata, config, onExecute, onClos
                 const parts = (tableMeta.fullName || tableMeta.name).replace(/[\[\]]/g, '').split('.');
                 const schema = parts.length > 1 ? parts[0] : 'dbo';
                 const tbl = parts[parts.length - 1];
-                query = `SELECT c.name AS COLUMN_NAME, ty.name AS DATA_TYPE, c.is_nullable AS IS_NULLABLE, ISNULL((SELECT 1 FROM sys.index_columns ic JOIN sys.indexes i ON ic.object_id=i.object_id AND ic.index_id=i.index_id WHERE ic.object_id=t.object_id AND ic.column_id=c.column_id AND i.is_primary_key=1),0) AS IS_PK FROM sys.tables t JOIN sys.schemas s ON t.schema_id=s.schema_id JOIN sys.columns c ON t.object_id=c.object_id JOIN sys.types ty ON c.user_type_id=ty.user_type_id WHERE s.name='${schema}' AND t.name='${tbl}' ORDER BY c.column_id`;
+                query = `USE [${selectedDb}]; SELECT c.name AS COLUMN_NAME, ty.name AS DATA_TYPE, c.is_nullable AS IS_NULLABLE, ISNULL((SELECT 1 FROM sys.index_columns ic JOIN sys.indexes i ON ic.object_id=i.object_id AND ic.index_id=i.index_id WHERE ic.object_id=t.object_id AND ic.column_id=c.column_id AND i.is_primary_key=1),0) AS IS_PK FROM sys.tables t JOIN sys.schemas s ON t.schema_id=s.schema_id JOIN sys.columns c ON t.object_id=c.object_id JOIN sys.types ty ON c.user_type_id=ty.user_type_id WHERE s.name='${schema}' AND t.name='${tbl}' ORDER BY c.column_id`;
             }
 
             // IMPORTANT: /api/db/query expects { config, query } wrapper
-            const res = await apiRequest('/api/db/query', 'POST', { config, query, page: 1, pageSize: 500 });
+            const res = await apiRequest('/api/db/query', 'POST', { config: { ...config, database: selectedDb }, query, page: 1, pageSize: 500 });
             console.log('[Builder] Column fetch result for', tableKey, ':', res);
 
             if (res.success && res.data && res.data.length > 0) {
@@ -157,7 +196,7 @@ export default function VisualQueryBuilder({ metadata, config, onExecute, onClos
         return sql;
     };
 
-    const filteredTables = metadata.tables?.filter((t: any) =>
+    const filteredTables = currentMetadata.tables?.filter((t: any) =>
         t.name.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
@@ -176,6 +215,25 @@ export default function VisualQueryBuilder({ metadata, config, onExecute, onClos
                 </div>
 
                 <div className="flex items-center gap-3">
+                    <div className="bg-muted/50 border border-border px-3 py-1.5 rounded-xl flex items-center gap-2">
+                        <Database className="w-3.5 h-3.5 text-purple-400" />
+                        <select
+                            value={selectedDb}
+                            onChange={(e) => {
+                                setSelectedDb(e.target.value);
+                                setSelectedTables([]);
+                                setSelectedColumns({});
+                                setTableColumns({});
+                            }}
+                            className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-foreground focus:ring-0 cursor-pointer outline-none min-w-[120px]"
+                        >
+                            {databases.map(db => (
+                                <option key={db.name} value={db.name} className="bg-background text-foreground uppercase">{db.name}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="w-3 h-3 text-muted-foreground pointer-events-none -ml-6 mr-2" />
+                    </div>
+
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-muted rounded-xl text-muted-foreground transition-all"
@@ -213,26 +271,35 @@ export default function VisualQueryBuilder({ metadata, config, onExecute, onClos
                         </div>
                     </div>
                     <div className="flex-1 overflow-auto p-2 space-y-1">
-                        {filteredTables.map((t: any) => (
-                            <button
-                                key={t.name}
-                                onClick={() => toggleTable(t)}
-                                className={cn(
-                                    "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-left",
-                                    selectedTables.includes(t.name)
-                                        ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-                                        : "text-muted-foreground hover:bg-muted/50 border border-transparent"
-                                )}
-                            >
-                                <Table className="w-4 h-4 shrink-0" />
-                                <span className="flex-1 truncate">{t.name}</span>
-                                {loadingTable === t.name ? (
-                                    <Loader2 className="w-3 h-3 ml-auto animate-spin" />
-                                ) : selectedTables.includes(t.name) ? (
-                                    <PlusCircle className="w-3 h-3 ml-auto fill-current" />
-                                ) : null}
-                            </button>
-                        ))}
+                        {loadingMetadata ? (
+                            <div className="flex flex-col items-center justify-center h-40 gap-3 opacity-40">
+                                <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
+                                <span className="text-[9px] font-black uppercase tracking-widest">Fetching {selectedDb}...</span>
+                            </div>
+                        ) : (
+                            (currentMetadata.tables || []).filter((t: any) =>
+                                t.name.toLowerCase().includes(searchTerm.toLowerCase())
+                            ).map((t: any) => (
+                                <button
+                                    key={t.name}
+                                    onClick={() => toggleTable(t)}
+                                    className={cn(
+                                        "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-left",
+                                        selectedTables.includes(t.name)
+                                            ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+                                            : "text-muted-foreground hover:bg-muted/50 border border-transparent"
+                                    )}
+                                >
+                                    <Table className="w-4 h-4 shrink-0" />
+                                    <span className="flex-1 truncate">{t.name}</span>
+                                    {loadingTable === t.name ? (
+                                        <Loader2 className="w-3 h-3 ml-auto animate-spin" />
+                                    ) : selectedTables.includes(t.name) ? (
+                                        <PlusCircle className="w-3 h-3 ml-auto fill-current" />
+                                    ) : null}
+                                </button>
+                            ))
+                        )}
                     </div>
                 </div>
 
@@ -269,7 +336,7 @@ export default function VisualQueryBuilder({ metadata, config, onExecute, onClos
                                                     </button>
                                                 )}
                                                 <button
-                                                    onClick={() => toggleTable(metadata.tables?.find((t: any) => t.name === tName) || { name: tName })}
+                                                    onClick={() => toggleTable(currentMetadata.tables?.find((t: any) => t.name === tName) || { name: tName })}
                                                     className="p-1 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-md transition-all"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
