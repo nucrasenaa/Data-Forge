@@ -8,6 +8,8 @@ import { apiRequest } from '@/lib/api';
 interface VisualQueryBuilderProps {
     metadata: any;
     config: any;
+    database: string;
+    databases?: any[];
     onExecute: (sql: string) => void;
     onClose: () => void;
 }
@@ -19,9 +21,8 @@ interface ColumnInfo {
     isNullable: boolean;
 }
 
-export default function VisualQueryBuilder({ metadata: initialMetadata, config, onExecute, onClose }: VisualQueryBuilderProps) {
-    const [databases, setDatabases] = useState<any[]>([]);
-    const [selectedDb, setSelectedDb] = useState(config.database);
+export default function VisualQueryBuilder({ metadata: initialMetadata, config, database, databases = [], onExecute, onClose }: VisualQueryBuilderProps) {
+    const [selectedDb, setSelectedDb] = useState(database);
     const [currentMetadata, setCurrentMetadata] = useState<any>(initialMetadata);
     const [selectedTables, setSelectedTables] = useState<string[]>([]);
     const [selectedColumns, setSelectedColumns] = useState<Record<string, string[]>>({});
@@ -32,22 +33,8 @@ export default function VisualQueryBuilder({ metadata: initialMetadata, config, 
     const [loadingMetadata, setLoadingMetadata] = useState(false);
 
     React.useEffect(() => {
-        const fetchDbs = async () => {
-            try {
-                const res = await apiRequest('/api/db/metadata', 'POST', config);
-                if (res.success) {
-                    setDatabases(res.metadata.databases);
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        };
-        fetchDbs();
-    }, [config]);
-
-    React.useEffect(() => {
         const fetchMetadata = async () => {
-            if (selectedDb === config.database) {
+            if (selectedDb === database) {
                 setCurrentMetadata(initialMetadata);
                 return;
             }

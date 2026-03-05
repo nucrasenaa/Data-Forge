@@ -13,6 +13,7 @@ import {
     Zap,
     Layers,
     Table as TableIcon,
+    TrendingUp,
     Folder,
     FolderOpen,
     PlusCircle,
@@ -37,11 +38,13 @@ interface SidebarProps {
     onObjectSelect: (objectName: string, type: 'table' | 'view' | 'procedure' | 'synonym', database?: string) => void;
     onMetadataLoad?: (dbName: string, metadata: MetadataType) => void;
     selectedObject: string | null;
-    onAddClick: (type: 'table-designer' | 'view-designer' | 'proc-designer' | 'import-wizard' | 'query-builder' | 'er-diagram' | 'server-monitor' | 'user-manager' | 'schema-compare' | 'ai-settings') => void;
+    onAddClick: (type: 'table-designer' | 'view-designer' | 'proc-designer' | 'import-wizard' | 'query-builder' | 'er-diagram' | 'server-monitor' | 'user-manager' | 'schema-compare' | 'ai-settings' | 'performance-advisor') => void;
     onViewScript: (fullName: string, type: 'table' | 'view' | 'procedure', database: string) => void;
     onRunQuery: (sql: string) => void;
     className?: string;
 }
+
+
 
 type MetadataType = {
     databases: any[];
@@ -461,6 +464,14 @@ export default function Sidebar({
                             >
                                 <LayoutDashboard className="w-3.5 h-3.5 text-purple-400 group-hover:scale-110 transition-transform" />
                                 <span className="text-[8px] font-bold uppercase tracking-tighter text-purple-400/70">Builder</span>
+                            </button>
+                            <button
+                                onClick={() => onAddClick('performance-advisor')}
+                                className="flex flex-col items-center gap-2 p-2.5 rounded-xl bg-emerald-500/5 hover:bg-emerald-600/10 border border-emerald-500/10 transition-all group"
+                                title="Performance Advisor"
+                            >
+                                <TrendingUp className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                                <span className="text-[8px] font-bold uppercase tracking-tighter text-emerald-400/70">Advisor</span>
                             </button>
                         </div>
                     </div>

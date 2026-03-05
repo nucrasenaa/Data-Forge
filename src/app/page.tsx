@@ -11,12 +11,15 @@ import { apiRequest } from '@/lib/api';
 import TableDesigner from '@/components/TableDesigner';
 import ImportWizard from '@/components/ImportWizard';
 import VisualQueryBuilder from '@/components/VisualQueryBuilder';
+import ViewDesigner from '@/components/ViewDesigner';
+import ProcDesigner from '@/components/ProcDesigner';
 import ExecutionPlan from '@/components/ExecutionPlan';
 import ERDiagram from '@/components/ERDiagram';
 import ServerMonitor from '@/components/ServerMonitor';
 import UserManager from '@/components/UserManager';
 import SchemaCompare from '@/components/SchemaCompare';
 import AISettings from '@/components/AISettings';
+import PerformanceAdvisor from '@/components/PerformanceAdvisor';
 import { saveToHistory } from '@/lib/history';
 import { popoutTab } from '@/lib/popout';
 import { Activity, Users, GitCompare } from 'lucide-react';
@@ -43,7 +46,7 @@ interface ResultSet {
 
 interface Tab {
   id: string;
-  type: 'table' | 'query' | 'table-designer' | 'view-designer' | 'proc-designer' | 'import-wizard' | 'query-builder' | 'er-diagram' | 'server-monitor' | 'user-manager' | 'schema-compare' | 'ai-settings';
+  type: 'table' | 'query' | 'table-designer' | 'view-designer' | 'proc-designer' | 'import-wizard' | 'query-builder' | 'er-diagram' | 'server-monitor' | 'user-manager' | 'schema-compare' | 'ai-settings' | 'performance-advisor';
   title: string;
   database: string;
   sqlQuery: string;
@@ -495,6 +498,8 @@ export default function Home() {
       title = 'User Manager';
     } else if (type === 'schema-compare' as any) {
       title = 'Schema Diff';
+    } else if (type === 'performance-advisor') {
+      title = 'Performance Advisor';
     }
 
     const newTab: Tab = {
@@ -1016,38 +1021,33 @@ export default function Home() {
                 <TableDesigner
                   dbType={config.dbType}
                   database={activeTab.database}
+                  databases={metadata?.databases || []}
                   onExecute={(sql) => executeQuery(sql, { tabId: activeTab.id, silent: false })}
                   loading={activeTab.loading}
                 />
-              ) : (activeTab.type === 'view-designer' || activeTab.type === 'proc-designer') ? (
-                <div className="flex-1 flex flex-col">
-                  <QueryEditor
-                    query={activeTab.sqlQuery}
-                    onQueryChange={(q) => updateTab(activeTab.id, { sqlQuery: q })}
-                    onExecute={() => executeQuery(activeTab.sqlQuery, { tabId: activeTab.id, includeCount: false })}
-                    loading={activeTab.loading}
-                    metadata={metadata}
-                    dbType={config.dbType}
-                  />
-                  <div className="h-40 border-t border-border bg-card/50 overflow-auto p-4">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">Execute Results</div>
-                    {activeTab.queryResult.data.length > 0 ? (
-                      <pre className="text-xs font-mono text-emerald-400">
-                        {JSON.stringify(activeTab.queryResult.data, null, 2)}
-                      </pre>
-                    ) : activeTab.loading ? (
-                      <div className="flex items-center gap-2 text-muted-foreground text-xs italic">
-                        <RotateCcw className="w-3 h-3 animate-spin" /> Executing command...
-                      </div>
-                    ) : (
-                      <div className="text-muted-foreground text-xs italic">No results yet. Run the command to create the object.</div>
-                    )}
-                  </div>
-                </div>
+              ) : activeTab.type === 'view-designer' ? (
+                <ViewDesigner
+                  dbType={config.dbType}
+                  database={activeTab.database}
+                  databases={metadata?.databases || []}
+                  metadata={metadata || {}}
+                  config={config}
+                  onExecute={(sql) => executeQuery(sql, { tabId: activeTab.id, silent: false })}
+                  onClose={() => closeTab(activeTab.id)}
+                />
+              ) : activeTab.type === 'proc-designer' ? (
+                <ProcDesigner
+                  dbType={config.dbType}
+                  database={activeTab.database}
+                  databases={metadata?.databases || []}
+                  onExecute={(sql) => executeQuery(sql, { tabId: activeTab.id, silent: false })}
+                  onClose={() => closeTab(activeTab.id)}
+                />
               ) : activeTab.type === 'import-wizard' ? (
                 <ImportWizard
                   config={config}
                   metadata={metadata || {}}
+                  databases={metadata?.databases || []}
                   onExecute={(sql) => executeQuery(sql, { tabId: activeTab.id, silent: false })}
                   onClose={() => closeTab(activeTab.id)}
                 />
@@ -1055,6 +1055,8 @@ export default function Home() {
                 <VisualQueryBuilder
                   metadata={metadata || {}}
                   config={config}
+                  database={activeTab.database}
+                  databases={metadata?.databases || []}
                   onExecute={(sql) => {
                     // Create a new query tab with this SQL
                     const id = `q-${Date.now()}`;
@@ -1087,7 +1089,10 @@ export default function Home() {
                 <SchemaCompare config={config} onClose={() => closeTab(activeTab.id)} />
               ) : activeTab.type === 'ai-settings' ? (
                 <AISettings onClose={() => closeTab(activeTab.id)} />
-              ) : null}
+              ) : activeTab.type === 'performance-advisor' ? (
+                <PerformanceAdvisor config={config} onClose={() => closeTab(activeTab.id)} />
+              ) : null
+              }
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center space-y-4 opacity-40">
@@ -1097,7 +1102,7 @@ export default function Home() {
               <p className="text-sm font-black uppercase tracking-[0.3em] text-muted-foreground">Select an object to forge</p>
             </div>
           )}
-        </main>
+        </main >
 
         <footer className="h-8 border-t border-border/30 bg-card/20 flex items-center justify-between px-6 shrink-0 shrink-0">
           <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-muted-foreground/30">
@@ -1114,7 +1119,7 @@ export default function Home() {
             <Github className="w-3 h-3" /> GitHub
           </a>
         </footer>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

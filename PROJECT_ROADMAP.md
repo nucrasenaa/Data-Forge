@@ -108,15 +108,16 @@ This document tracks the development progress of **Data Forge**. It serves as a 
     - [x] Column management (Name, Type, Nullability, Primary Key)
     - [x] Constraint manager (Foreign Keys, Uniques, Checks)
     - [x] Index designer
-- [ ] **View Designer**
+- [x] **View Designer**
     - [x] Query-based view creation with syntax validation
-    - [ ] Visual UI for column selection & Aliasing
-- [ ] **Procedure & Function Designer**
+    - [x] Visual UI for column selection & Aliasing
+- [x] **Procedure & Function Designer**
     - [x] Parameter definitions UI
     - [x] Template-based boilerplate generation
-    - [ ] Visual Logic block editor (Experimental)
-- [ ] **Global Designer Enhancements**
-    - [ ] Multi-database selector for all designers (Bridge to Enterprise Forge)
+    - [x] Visual Logic builder (Structured Parameter & Body editor implemented)
+- [x] **Global Designer Enhancements**
+    - [x] Multi-database selector for all designers (Implemented for Table, View, Proc Designers & Import Wizard)
+    - [ ] Cross-database schema intelligence (Table completion across selected DBs)
 
 ---
 

@@ -17,18 +17,20 @@ interface Column {
 interface TableDesignerProps {
     dbType: string;
     database: string;
+    databases?: any[];
     onExecute: (sql: string) => void;
     loading?: boolean;
 }
 
 const COMMON_TYPES: Record<string, string[]> = {
-    mssql: ['int', 'bigint', 'varchar(50)', 'varchar(max)', 'nvarchar(50)', 'nvarchar(max)', 'datetime', 'date', 'bit', 'decimal(18,2)', 'uniqueidentifier', 'smallint', 'tinyint'],
+    mssql: ['int', 'bigint', 'varchar(50)', 'varchar(max)', 'nvarchar(50)', 'nvarchar(max)', 'datetime', 'date', 'bit', 'decimal(18,2)', 'uniqueidentifier', 'smallint', 'tinyint', 'varbinary(max)'],
     postgres: ['integer', 'bigint', 'varchar', 'text', 'timestamp', 'boolean', 'numeric', 'uuid', 'date', 'jsonb'],
     mysql: ['int', 'bigint', 'varchar(255)', 'text', 'datetime', 'date', 'tinyint(1)', 'decimal(10,2)', 'json', 'timestamp'],
 };
 
-export default function TableDesigner({ dbType, database, onExecute, loading }: TableDesignerProps) {
+export default function TableDesigner({ dbType, database, databases = [], onExecute, loading }: TableDesignerProps) {
     const dialect = dbType || 'mssql';
+    const [selectedDb, setSelectedDb] = useState(database);
     const [tableName, setTableName] = useState('');
     const [schema, setSchema] = useState(dialect === 'mssql' ? 'dbo' : (dialect === 'postgres' ? 'public' : ''));
     const [columns, setColumns] = useState<Column[]>([
@@ -56,7 +58,8 @@ export default function TableDesigner({ dbType, database, onExecute, loading }: 
         const qStart = dialect === 'mssql' ? '[' : (dialect === 'postgres' ? '"' : '`');
         const qEnd = dialect === 'mssql' ? ']' : (dialect === 'postgres' ? '"' : '`');
 
-        let sql = `CREATE TABLE ${schema ? `${qStart}${schema}${qEnd}.` : ''}${qStart}${tableName}${qEnd} (\n`;
+        let sql = dialect === 'mssql' ? `USE ${qStart}${selectedDb}${qEnd};\nGO\n\n` : '';
+        sql += `CREATE TABLE ${schema ? `${qStart}${schema}${qEnd}.` : ''}${qStart}${tableName}${qEnd} (\n`;
 
         const columnDefs = columns.map(c => {
             let def = `  ${qStart}${c.name}${qEnd} ${c.type.toUpperCase()}`;
@@ -103,8 +106,17 @@ export default function TableDesigner({ dbType, database, onExecute, loading }: 
                     </div>
                     <div>
                         <h2 className="text-sm font-black uppercase tracking-widest leading-none mb-1">Table Designer</h2>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
-                            <Database className="w-3 h-3" /> {database || 'Default'}
+                        <div className="flex items-center gap-2">
+                            <Database className="w-3 h-3 text-muted-foreground" />
+                            <select
+                                value={selectedDb}
+                                onChange={(e) => setSelectedDb(e.target.value)}
+                                className="bg-transparent border-none p-0 text-[10px] text-muted-foreground uppercase font-black tracking-widest focus:ring-0 cursor-pointer hover:text-accent transition-colors"
+                            >
+                                {databases.map(db => (
+                                    <option key={db.name} value={db.name} className="bg-background text-foreground">{db.name}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                 </div>

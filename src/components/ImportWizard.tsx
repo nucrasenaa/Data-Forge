@@ -8,19 +8,22 @@ import { apiRequest } from '@/lib/api';
 interface ImportWizardProps {
     config: any;
     metadata: any;
+    databases?: any[];
     onClose: () => void;
     onExecute: (sql: string) => void;
 }
 
-export default function ImportWizard({ config, metadata, onClose, onExecute }: ImportWizardProps) {
+export default function ImportWizard({ config, metadata, databases = [], onClose, onExecute }: ImportWizardProps) {
     const [step, setStep] = useState(1);
     const [file, setFile] = useState<File | null>(null);
     const [fileData, setFileData] = useState<any[]>([]);
     const [fileColumns, setFileColumns] = useState<string[]>([]);
+    const [selectedDb, setSelectedDb] = useState(config.database);
     const [targetTable, setTargetTable] = useState('');
     const [mapping, setMapping] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
     const [tableColumns, setTableColumns] = useState<string[]>([]);
+    const [localTables, setLocalTables] = useState<any[]>(metadata.tables || []);
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -58,14 +61,59 @@ export default function ImportWizard({ config, metadata, onClose, onExecute }: I
     };
 
     useEffect(() => {
-        if (targetTable) {
-            // In a real app, we'd fetch table schema. For now, we'll try to guess or use metadata if available.
-            const table = metadata.tables?.find((t: any) => t.name === targetTable);
-            // This is a simplification. Usually we need an API to get column list precisely.
-            // For now, let's assume we can get it or the user will type it.
-            setTableColumns(['id', 'name', 'email', 'created_at']); // Placeholder
-        }
-    }, [targetTable, metadata]);
+        const fetchTables = async () => {
+            if (selectedDb === config.database) {
+                setLocalTables(metadata.tables || []);
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const data = await apiRequest('/api/db/metadata', 'POST', { ...config, database: selectedDb });
+                if (data.success) {
+                    setLocalTables(data.metadata.tables || []);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTables();
+    }, [selectedDb, config, metadata.tables]);
+
+    useEffect(() => {
+        const fetchColumns = async () => {
+            if (!targetTable) return;
+
+            setLoading(true);
+            try {
+                // Find schema if available in metadata
+                const tableInfo = localTables?.find((t: any) => t.name === targetTable || t.fullName === targetTable);
+                const schema = tableInfo?.schema;
+
+                const data = await apiRequest('/api/db/columns', 'POST', {
+                    ...config,
+                    database: selectedDb,
+                    table: targetTable,
+                    schema: schema
+                });
+
+                if (data.success) {
+                    setTableColumns(data.columns);
+                } else {
+                    console.error('Failed to fetch columns:', data.message);
+                }
+            } catch (err) {
+                console.error('Error fetching columns:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchColumns();
+    }, [targetTable, config, selectedDb, localTables]);
 
     const handleNext = () => {
         if (step === 1 && file) setStep(2);
@@ -84,29 +132,33 @@ export default function ImportWizard({ config, metadata, onClose, onExecute }: I
     const generateInsertSql = () => {
         if (!targetTable || fileData.length === 0) return '';
 
-        const mappedTableCols = Object.keys(mapping).filter(tc => mapping[tc]);
-        if (mappedTableCols.length === 0) return '-- No columns mapped';
+        const qStart = config.dbType === 'mssql' ? '[' : (config.dbType === 'postgres' ? '"' : '`');
+        const qEnd = config.dbType === 'mssql' ? ']' : (config.dbType === 'postgres' ? '"' : '`');
 
-        let sql = `-- Import from ${file?.name}\n`;
-        const batchSize = 100;
-        const batches = [];
+        const tableInfo = localTables?.find((t: any) => t.name === targetTable || t.fullName === targetTable);
+        const schema = tableInfo?.schema || (config.dbType === 'mssql' ? 'dbo' : 'public');
+        const tableIdentifier = `${qStart}${schema}${qEnd}.${qStart}${targetTable}${qEnd}`;
 
-        for (let i = 0; i < Math.min(fileData.length, 500); i += batchSize) {
-            const chunk = fileData.slice(i, i + batchSize);
-            const values = chunk.map(row => {
-                const rowValues = mappedTableCols.map(tc => {
-                    const val = row[mapping[tc]];
-                    if (val === null || val === undefined) return 'NULL';
-                    if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
-                    return val;
-                });
-                return `(${rowValues.join(', ')})`;
-            }).join(',\n');
+        let sql = config.dbType === 'mssql' ? `USE ${qStart}${selectedDb}${qEnd};\nGO\n\n` : '';
 
-            batches.push(`INSERT INTO ${targetTable} (${mappedTableCols.map(c => `[${c}]`).join(', ')})\nVALUES\n${values};`);
+        const colsToInsert = Object.keys(mapping);
+        const rows = fileData.slice(0, 100); // Limit preview
+
+        rows.forEach(row => {
+            const values = colsToInsert.map(tc => {
+                const val = row[mapping[tc]];
+                if (val === undefined || val === null) return 'NULL';
+                if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+                return val;
+            });
+            sql += `INSERT INTO ${tableIdentifier} (${colsToInsert.map(c => `${qStart}${c}${qEnd}`).join(', ')}) VALUES (${values.join(', ')});\n`;
+        });
+
+        if (fileData.length > 100) {
+            sql += `\n-- ... and ${fileData.length - 100} more rows`;
         }
 
-        return batches.join('\n\n');
+        return sql;
     };
 
     const handleRunImport = () => {
@@ -116,15 +168,23 @@ export default function ImportWizard({ config, metadata, onClose, onExecute }: I
     };
 
     return (
-        <div className="flex-1 flex flex-col bg-background overflow-hidden">
-            <div className="h-16 border-b border-border bg-card/30 flex items-center px-6 justify-between shrink-0">
+        <div className="flex-1 flex flex-col bg-background overflow-hidden relative">
+            {/* Header */}
+            <div className="h-16 border-b border-border bg-card/30 flex items-center px-8 justify-between shrink-0">
                 <div className="flex items-center gap-4">
-                    <div className="p-2 bg-emerald-500/10 rounded-lg">
-                        <Upload className="w-5 h-5 text-emerald-500" />
+                    <div className="p-2.5 bg-accent/10 rounded-xl text-accent border border-accent/20">
+                        <Upload className="w-5 h-5" />
                     </div>
                     <div>
-                        <h2 className="text-sm font-black uppercase tracking-widest leading-none mb-1">Import Wizard</h2>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Step {step} of 3</span>
+                        <h2 className="text-sm font-black uppercase tracking-[0.2em] leading-none mb-1">Import Wizard</h2>
+                        <div className="flex items-center gap-3">
+                            <span className="text-[9px] text-muted-foreground uppercase opacity-40 font-bold">Step {step} of 4</span>
+                            <div className="w-1 h-1 rounded-full bg-border" />
+                            <div className="flex items-center gap-1.5">
+                                <Database className="w-3 h-3 text-muted-foreground/60" />
+                                <span className="text-[9px] text-muted-foreground/60 font-black uppercase tracking-widest">{selectedDb}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-all">
@@ -192,19 +252,42 @@ export default function ImportWizard({ config, metadata, onClose, onExecute }: I
                             <p className="text-muted-foreground text-sm">Where should we import the data?</p>
                         </div>
 
-                        <div className="max-w-xl mx-auto space-y-4">
-                            <div className="relative">
-                                <Database className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                                <select
-                                    className="w-full bg-muted/30 border border-border rounded-2xl pl-12 pr-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-accent transition-all appearance-none font-bold"
-                                    value={targetTable}
-                                    onChange={(e) => setTargetTable(e.target.value)}
-                                >
-                                    <option value="">Select a table...</option>
-                                    {metadata.tables?.map((t: any) => (
-                                        <option key={t.name} value={t.name}>{t.name}</option>
-                                    ))}
-                                </select>
+                        <div className="max-w-xl mx-auto space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-2">Target Database</label>
+                                <div className="relative">
+                                    <Database className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                                    <select
+                                        className="w-full bg-muted/30 border border-border rounded-2xl pl-12 pr-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-accent transition-all appearance-none font-bold"
+                                        value={selectedDb}
+                                        onChange={(e) => { setSelectedDb(e.target.value); setTargetTable(''); }}
+                                    >
+                                        {databases.map(db => (
+                                            <option key={db.name} value={db.name}>{db.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-2">Target Table</label>
+                                <div className="relative">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center">
+                                        <div className="w-3 h-3 border-2 border-muted-foreground rounded-sm" />
+                                    </div>
+                                    <select
+                                        className="w-full bg-muted/30 border border-border rounded-2xl pl-12 pr-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-accent transition-all appearance-none font-bold disabled:opacity-50"
+                                        value={targetTable}
+                                        onChange={(e) => setTargetTable(e.target.value)}
+                                        disabled={loading}
+                                    >
+                                        <option value="">Select a table...</option>
+                                        {localTables?.map((t: any) => (
+                                            <option key={t.fullName || t.name} value={t.fullName || t.name}>{t.fullName || t.name}</option>
+                                        ))}
+                                    </select>
+                                    {loading && <Settings2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-accent animate-spin" />}
+                                </div>
                             </div>
 
                             {targetTable && (
