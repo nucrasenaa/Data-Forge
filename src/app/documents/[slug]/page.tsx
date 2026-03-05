@@ -8,6 +8,19 @@ interface PageProps {
     params: Promise<{ slug: string }>;
 }
 
+export async function generateStaticParams() {
+    const documentsDir = path.join(process.cwd(), 'Documents');
+    if (!fs.existsSync(documentsDir)) {
+        return [];
+    }
+    const files = fs.readdirSync(documentsDir);
+    return files
+        .filter(file => file.endsWith('.md'))
+        .map(file => ({
+            slug: file.replace('.md', ''),
+        }));
+}
+
 export default async function SlugDocPage({ params }: PageProps) {
     const { slug } = await params;
     const fileName = `${slug}.md`;
