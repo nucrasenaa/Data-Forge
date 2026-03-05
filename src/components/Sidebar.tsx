@@ -40,6 +40,7 @@ interface SidebarProps {
     onAddClick: (type: 'table-designer' | 'view-designer' | 'proc-designer' | 'import-wizard' | 'query-builder' | 'er-diagram' | 'server-monitor' | 'user-manager' | 'schema-compare' | 'ai-settings') => void;
     onViewScript: (fullName: string, type: 'table' | 'view' | 'procedure', database: string) => void;
     onRunQuery: (sql: string) => void;
+    className?: string;
 }
 
 type MetadataType = {
@@ -51,7 +52,16 @@ type MetadataType = {
     synonyms: any[];
 };
 
-export default function Sidebar({ config, onObjectSelect, onMetadataLoad, selectedObject, onAddClick, onViewScript, onRunQuery }: SidebarProps) {
+export default function Sidebar({
+    config,
+    onObjectSelect,
+    onMetadataLoad,
+    selectedObject,
+    onAddClick,
+    onViewScript,
+    onRunQuery,
+    className
+}: SidebarProps) {
     const [activeTab, setActiveTab] = useState<'explorer' | 'history' | 'bookmarks'>('explorer');
     const [databases, setDatabases] = useState<any[]>([]);
     const [dbMetadata, setDbMetadata] = useState<Record<string, MetadataType>>({});
@@ -298,7 +308,7 @@ export default function Sidebar({ config, onObjectSelect, onMetadataLoad, select
     }), [databases, dbMetadata, config.database]);
 
     return (
-        <div className="w-80 h-screen border-r border-border flex flex-col bg-background/50 backdrop-blur-2xl">
+        <div className={cn("w-80 h-screen border-r border-border flex flex-col bg-background/50 backdrop-blur-2xl transition-all duration-300", className)}>
             {/* Object Forge (Action Buttons) */}
             <div className="p-4 border-b border-border space-y-4">
                 <div className="flex items-center justify-between">

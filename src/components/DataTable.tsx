@@ -277,72 +277,87 @@ export default function DataTable({
                 </table>
             </div>
 
-            <div className="h-14 border border-t-0 border-border bg-muted/20 rounded-b-xl flex items-center justify-between px-6 shrink-0 sticky bottom-0 z-20 backdrop-blur-md">
-                <div className="flex items-center gap-4">
-                    <div className="relative" ref={exportRef}>
-                        <button
-                            onClick={() => setShowExport(!showExport)}
-                            className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent text-[10px] font-black uppercase tracking-widest transition-all border border-accent/20"
-                        >
-                            <Download className="w-3.5 h-3.5" /> Export Data <ChevronDown className={cn("w-3 h-3 transition-transform", showExport && "rotate-180")} />
-                        </button>
+            <div className="h-auto md:h-14 border border-t-0 border-border bg-muted/20 rounded-b-xl flex flex-col md:flex-row md:items-center justify-between px-4 md:px-6 py-3 md:py-0 gap-4 md:gap-0 shrink-0 sticky bottom-0 z-20 backdrop-blur-md">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-4">
+                    <div className="flex items-center justify-between w-full md:w-auto gap-4">
+                        <div className="relative" ref={exportRef}>
+                            <button
+                                onClick={() => setShowExport(!showExport)}
+                                className="flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 text-accent text-[10px] font-black uppercase tracking-widest transition-all border border-accent/20"
+                            >
+                                <Download className="w-3.5 h-3.5" /> Export <ChevronDown className={cn("w-3 h-3 transition-transform", showExport && "rotate-180")} />
+                            </button>
 
-                        {showExport && (
-                            <div className="absolute bottom-full left-0 mb-2 w-48 bg-card border border-border rounded-xl shadow-2xl overflow-hidden glass animate-in slide-in-from-bottom-2 fade-in z-50">
-                                <button onClick={exportToCSV} className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all text-left">
-                                    <FileText className="w-4 h-4 text-emerald-400" /> Export as CSV
-                                </button>
-                                <button onClick={exportToJSON} className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all text-left border-t border-border/50">
-                                    <FileJson className="w-4 h-4 text-amber-400" /> Export as JSON
-                                </button>
-                                <button onClick={() => exportToSQL('mssql')} className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all text-left border-t border-border/50">
-                                    <DatabaseIcon className="w-4 h-4 text-blue-400" /> INSERT Scripts (MSSQL)
-                                </button>
-                                <button onClick={() => exportToSQL('postgres')} className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all text-left border-t border-border/50">
-                                    <Share2 className="w-4 h-4 text-purple-400" /> INSERT Scripts (PG)
-                                </button>
-                                <button onClick={exportToExcel} className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all text-left border-t border-border/50">
-                                    <TableIcon className="w-4 h-4 text-green-400" /> Export as Excel (XLSX)
-                                </button>
-                            </div>
-                        )}
+                            {showExport && (
+                                <div className="absolute bottom-full left-0 mb-2 w-48 bg-card border border-border rounded-xl shadow-2xl overflow-hidden glass animate-in slide-in-from-bottom-2 fade-in z-50">
+                                    <button onClick={exportToCSV} className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all text-left">
+                                        <FileText className="w-4 h-4 text-emerald-400" /> Export as CSV
+                                    </button>
+                                    <button onClick={exportToJSON} className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all text-left border-t border-border/50">
+                                        <FileJson className="w-4 h-4 text-amber-400" /> Export as JSON
+                                    </button>
+                                    <button onClick={() => exportToSQL('mssql')} className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all text-left border-t border-border/50">
+                                        <DatabaseIcon className="w-4 h-4 text-blue-400" /> INSERT Scripts (MSSQL)
+                                    </button>
+                                    <button onClick={() => exportToSQL('postgres')} className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all text-left border-t border-border/50">
+                                        <Share2 className="w-4 h-4 text-purple-400" /> INSERT Scripts (PG)
+                                    </button>
+                                    <button onClick={exportToExcel} className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all text-left border-t border-border/50">
+                                        <TableIcon className="w-4 h-4 text-green-400" /> Export as Excel (XLSX)
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                        <div className="md:hidden flex items-center gap-2">
+                            <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40 whitespace-nowrap">Row {data.length} / {totalRows || '?'}</span>
+                        </div>
                     </div>
 
-                    <div className="h-4 w-px bg-border mx-2" />
+                    <div className="hidden md:block h-4 w-px bg-border mx-2" />
 
-                    <span className="text-xs text-muted-foreground">
-                        Showing <span className="text-foreground font-medium">{data.length}</span> rows
-                    </span>
-                    <div className="h-4 w-px bg-border" />
-                    <span className="text-xs text-muted-foreground">
-                        Page <span className="text-foreground font-medium">{page}</span>
-                    </span>
-                    <div className="h-4 w-px bg-border" />
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Rows per page:</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => onPageSizeChange(Number(e.target.value))}
-                            className="bg-muted border border-border rounded px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-accent"
-                        >
-                            {[50, 100, 200, 500].map(size => (
-                                <option key={size} value={size}>{size}</option>
-                            ))}
-                        </select>
+                    <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start border-t border-border/10 md:border-0 pt-2 md:pt-0">
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider opacity-60">Page:</span>
+                            <span className="text-xs text-foreground font-bold bg-muted/50 px-2 py-0.5 rounded border border-border/50">{page}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider opacity-60">Size:</span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                                className="bg-muted border border-border rounded px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+                            >
+                                {[50, 100, 200, 500].map(size => (
+                                    <option key={size} value={size}>{size}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center justify-center gap-1 border-t border-border/10 md:border-0 pt-2 md:pt-0">
                     <button onClick={() => onPageChange(1)} disabled={page === 1} className="p-1.5 hover:bg-muted disabled:opacity-30 rounded-md transition-all">
                         <ChevronsLeft className="w-4 h-4" />
                     </button>
-                    <button onClick={() => onPageChange(page - 1)} disabled={page === 1} className="p-1.5 hover:bg-muted disabled:opacity-30 rounded-md transition-all mr-2">
+                    <button onClick={() => onPageChange(page - 1)} disabled={page === 1} className="p-1.5 hover:bg-muted disabled:opacity-30 rounded-md transition-all mr-1">
                         <ChevronLeft className="w-4 h-4" />
                     </button>
 
-                    <div className="flex items-center gap-1 mx-2">
-                        {[...Array(Math.min(5, Math.ceil((totalRows || 0) / pageSize) || 5))].map((_, i) => {
-                            const p = page > 3 ? page - 2 + i : i + 1;
+                    <div className="flex items-center gap-1 mx-1">
+                        {[...Array(Math.min(window?.innerWidth < 768 ? 3 : 5, Math.ceil((totalRows || 0) / pageSize) || 1))].map((_, i) => {
+                            const totalPages = Math.ceil((totalRows || 0) / pageSize) || 1;
+                            let p = page;
+                            if (window?.innerWidth < 768) {
+                                // Simplified mobile pagination
+                                if (page === 1) p = i + 1;
+                                else if (page === totalPages) p = Math.max(1, totalPages - 2 + i);
+                                else p = Math.max(1, page - 1 + i);
+                            } else {
+                                p = page > 3 ? page - 2 + i : i + 1;
+                            }
+
+                            if (p > totalPages) return null;
+
                             return (
                                 <button
                                     key={i}
@@ -358,7 +373,7 @@ export default function DataTable({
                         })}
                     </div>
 
-                    <button onClick={() => onPageChange(page + 1)} disabled={data.length < pageSize} className="p-1.5 hover:bg-muted disabled:opacity-30 rounded-md transition-all ml-2">
+                    <button onClick={() => onPageChange(page + 1)} disabled={data.length < pageSize} className="p-1.5 hover:bg-muted disabled:opacity-30 rounded-md transition-all ml-1">
                         <ChevronRight className="w-4 h-4" />
                     </button>
                     <button onClick={() => onPageChange(page + 5)} disabled={data.length < pageSize} className="p-1.5 hover:bg-muted disabled:opacity-30 rounded-md transition-all">

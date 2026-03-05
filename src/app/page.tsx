@@ -5,7 +5,7 @@ import ConnectionForm from '@/components/ConnectionForm';
 import Sidebar from '@/components/Sidebar';
 import QueryEditor from '@/components/QueryEditor';
 import DataTable from '@/components/DataTable';
-import { Database, LogOut, Table as TableIcon, LayoutDashboard, Terminal, Search, Filter, X, Plus, Server, Trash2, Globe, User, Link, Maximize2, Github, PlusCircle, Layers, Zap, RotateCcw, Share2, Sparkles, AlertCircle } from 'lucide-react';
+import { Database, LogOut, Table as TableIcon, LayoutDashboard, Terminal, Search, Filter, X, Plus, Server, Trash2, Globe, User, Link, Maximize2, Github, PlusCircle, Layers, Zap, RotateCcw, Share2, Sparkles, AlertCircle, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/api';
 import TableDesigner from '@/components/TableDesigner';
@@ -71,6 +71,7 @@ export default function Home() {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<any>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const activeTab = tabs.find(t => t.id === activeTabId);
 
@@ -705,21 +706,42 @@ export default function Home() {
   }
 
   return (
-    <div className="flex bg-background h-screen overflow-hidden">
+    <div className="flex bg-background h-screen overflow-hidden relative">
+      <div className={cn(
+        "fixed inset-0 bg-black/50 z-[60] lg:hidden transition-opacity duration-300",
+        sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+      )} onClick={() => setSidebarOpen(false)} />
+
       <Sidebar
         config={config}
-        onObjectSelect={handleObjectSelect}
+        onObjectSelect={(name, type, db) => {
+          handleObjectSelect(name, type, db);
+          if (window.innerWidth < 1024) setSidebarOpen(false);
+        }}
         onMetadataLoad={handleMetadataLoad}
         selectedObject={activeTab?.title || null}
-        onAddClick={addDesignerTab}
+        onAddClick={(type) => {
+          addDesignerTab(type);
+          if (window.innerWidth < 1024) setSidebarOpen(false);
+        }}
         onViewScript={handleViewScript}
         onRunQuery={handleRunHistoryQuery}
+        className={cn(
+          "fixed inset-y-0 left-0 z-[70] lg:relative lg:flex transition-transform duration-300 transform",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header / Tab Bar */}
-        {/* Header / Tab Bar */}
         <header className="h-14 border-b border-border bg-background/80 backdrop-blur-md flex items-center px-4 shrink-0 overflow-hidden relative z-50">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-2.5 mr-2 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-all shrink-0"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
           <div className="flex-1 flex items-center overflow-x-auto no-scrollbar gap-1 mr-4 flex-nowrap h-full">
             {tabs.map((tab) => (
               <div
@@ -773,15 +795,15 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <div className="flex flex-col items-end opacity-40">
+            <div className="hidden md:flex flex-col items-end opacity-40">
               <span className="text-[10px] font-black tracking-[0.2em] uppercase leading-none">Access Control</span>
               <span className="text-[9px] font-mono font-bold text-emerald-500">ENCRYPTED LINK</span>
             </div>
             <button
               onClick={handleDisconnect}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/5 hover:bg-red-500/10 text-red-500 border border-red-500/10 text-[9px] font-black uppercase tracking-[0.2em] transition-all"
+              className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl bg-red-500/5 hover:bg-red-500/10 text-red-500 border border-red-500/10 text-[9px] font-black uppercase tracking-[0.2em] transition-all"
             >
-              <LogOut className="w-3.5 h-3.5" /> Terminate
+              <LogOut className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Terminate</span>
             </button>
           </div>
         </header>
@@ -927,42 +949,48 @@ export default function Home() {
                 </div>
               ) : activeTab.type === 'table' ? (
                 <div className="flex-1 flex flex-col min-h-0">
-                  <div className="h-12 border-b border-border bg-muted/10 flex items-center px-6 gap-4 shrink-0">
-                    <div className="flex-1 flex gap-4 items-center">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest bg-muted/30 px-3 py-1.5 rounded-lg border border-border/50">
-                        <TableIcon className="w-3.5 h-3.5 text-blue-400" />
-                        {activeTab.title}
+                  <div className="h-auto md:h-12 border-b border-border bg-muted/10 flex flex-col md:flex-row md:items-center px-4 md:px-6 py-2 md:py-0 gap-2 md:gap-4 shrink-0">
+                    <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 md:items-center">
+                      <div className="flex items-center justify-between md:justify-start gap-4">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest bg-muted/30 px-3 py-1.5 rounded-lg border border-border/50">
+                          <TableIcon className="w-3.5 h-3.5 text-blue-400" />
+                          <span className="truncate max-w-[150px] md:max-w-none">{activeTab.title}</span>
+                        </div>
+                        <div className="md:hidden text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">
+                          {activeTab.queryResult.data.length} / {activeTab.queryResult.totalRows}
+                        </div>
                       </div>
-                      <div className="h-6 w-px bg-border/50 mx-1" />
-                      <button
-                        onClick={() => updateTab(activeTab.id, { showFilter: !activeTab.showFilter })}
-                        className={cn(
-                          "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all",
-                          activeTab.showFilter ? "bg-accent/10 text-accent border border-accent/20" : "text-muted-foreground hover:bg-muted"
+                      <div className="hidden md:block h-6 w-px bg-border/50 mx-1" />
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => updateTab(activeTab.id, { showFilter: !activeTab.showFilter })}
+                          className={cn(
+                            "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all whitespace-nowrap",
+                            activeTab.showFilter ? "bg-accent/10 text-accent border border-accent/20" : "text-muted-foreground hover:bg-muted"
+                          )}
+                        >
+                          <Filter className="w-3.5 h-3.5" /> {activeTab.showFilter ? (window?.innerWidth < 768 ? 'ON' : 'Filtering ON') : 'Quick Filter'}
+                        </button>
+                        {activeTab.showFilter && (
+                          <form onSubmit={handleFilterSearch} className="flex-1 md:max-w-md animate-in slide-in-from-left-2 fade-in">
+                            <div className="relative flex items-center">
+                              <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground opacity-50" />
+                              <input
+                                type="text"
+                                placeholder="WHERE..."
+                                className="w-full bg-muted/50 border border-border/50 rounded-lg pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent transition-all font-mono"
+                                value={activeTab.filter}
+                                onChange={(e) => updateTab(activeTab.id, { filter: e.target.value })}
+                                autoFocus
+                              />
+                            </div>
+                          </form>
                         )}
-                      >
-                        <Filter className="w-3.5 h-3.5" /> {activeTab.showFilter ? 'Filtering ON' : 'Quick Filter'}
-                      </button>
-                      {activeTab.showFilter && (
-                        <form onSubmit={handleFilterSearch} className="flex-1 max-w-md animate-in slide-in-from-left-2 fade-in">
-                          <div className="relative flex items-center">
-                            <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground opacity-50" />
-                            <input
-                              type="text"
-                              placeholder="WHERE condition (e.g., id > 100 AND name LIKE '%A%')"
-                              className="w-full bg-muted/50 border border-border/50 rounded-lg pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent transition-all font-mono"
-                              value={activeTab.filter}
-                              onChange={(e) => updateTab(activeTab.id, { filter: e.target.value })}
-                              autoFocus
-                            />
-                            <button type="submit" className="hidden" />
-                          </div>
-                        </form>
-                      )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter">
-                        Loaded {activeTab.queryResult.data.length} of {activeTab.queryResult.totalRows}
+                    <div className="hidden md:flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-tighter text-right">
+                        Loaded {activeTab.queryResult.data.length} <br /> of {activeTab.queryResult.totalRows}
                       </span>
                     </div>
                   </div>
