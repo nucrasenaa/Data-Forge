@@ -10,9 +10,9 @@
     "lint": "eslint",
     "electron-dev": "concurrently \"next dev\" \"wait-on http://localhost:3000 && electron ./electron/main.js\"",
     "electron-app": "electron ./electron/main.js",
-    "build-mac": "EXPORT_MODE=true next build && electron-builder build --mac",
-    "build-win": "EXPORT_MODE=true next build && electron-builder build --win",
-    "build-all": "EXPORT_MODE=true next build && electron-builder build --mac --win"
+    "build-mac": "cross-env EXPORT_MODE=true next build && electron-builder build --mac",
+    "build-win": "cross-env EXPORT_MODE=true next build && electron-builder build --win",
+    "build-all": "cross-env EXPORT_MODE=true next build && electron-builder build --mac --win"
   },
   "main": "electron/main.js",
   "dependencies": {
@@ -38,6 +38,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "electron": "^40.6.1",
     "electron-builder": "^26.8.1",
     "eslint": "^9",
