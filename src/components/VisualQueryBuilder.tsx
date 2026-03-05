@@ -46,7 +46,19 @@ export default function VisualQueryBuilder({ metadata, config, onExecute, onClos
                 const parts = (tableMeta.fullName || tableMeta.name).replace(/"/g, '').split('.');
                 const schema = parts.length > 1 ? parts[0] : 'public';
                 const tbl = parts[parts.length - 1];
-                query = `SELECT column_name, data_type, is_nullable, '' as column_key FROM information_schema.columns WHERE table_schema = '${schema}' AND table_name = '${tbl}' ORDER BY ordinal_position`;
+                // Use EXISTS subquery to detect Primary Keys in Postgres
+                query = `SELECT 
+                            column_name, 
+                            data_type, 
+                            is_nullable, 
+                            CASE WHEN EXISTS (
+                                SELECT 1 FROM information_schema.key_column_usage kcu
+                                JOIN information_schema.table_constraints tc ON kcu.constraint_name = tc.constraint_name
+                                WHERE kcu.table_name = '${tbl}' AND kcu.column_name = columns.column_name AND tc.constraint_type = 'PRIMARY KEY' AND kcu.table_schema = '${schema}'
+                            ) THEN 'PRI' ELSE '' END as column_key 
+                         FROM information_schema.columns 
+                         WHERE table_schema = '${schema}' AND table_name = '${tbl}' 
+                         ORDER BY ordinal_position`;
             } else {
                 // MSSQL
                 const parts = (tableMeta.fullName || tableMeta.name).replace(/[\[\]]/g, '').split('.');
