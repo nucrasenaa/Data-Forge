@@ -26,12 +26,14 @@ import {
     Activity,
     Users,
     GitCompare,
-    Sparkles
+    Sparkles,
+    Book
 } from 'lucide-react';
 import HistoryPanel from './HistoryPanel';
 import BookmarkPanel from './BookmarkPanel';
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/api';
+import Link from 'next/link';
 
 interface SidebarProps {
     config: any;

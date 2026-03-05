@@ -5,7 +5,8 @@ import ConnectionForm from '@/components/ConnectionForm';
 import Sidebar from '@/components/Sidebar';
 import QueryEditor from '@/components/QueryEditor';
 import DataTable from '@/components/DataTable';
-import { Database, LogOut, Table as TableIcon, LayoutDashboard, Terminal, Search, Filter, X, Plus, Server, Trash2, Globe, User, Link, Maximize2, Github, PlusCircle, Layers, Zap, RotateCcw, Share2, Sparkles, AlertCircle, Menu, Sun, Moon } from 'lucide-react';
+import { Database, LogOut, Table as TableIcon, LayoutDashboard, Terminal, Search, Filter, X, Plus, Server, Trash2, Globe, User, Link as LinkIcon, Maximize2, Github, PlusCircle, Layers, Zap, RotateCcw, Share2, Sparkles, AlertCircle, Menu, Sun, Moon, Book } from 'lucide-react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { apiRequest } from '@/lib/api';
 import TableDesigner from '@/components/TableDesigner';
@@ -781,7 +782,7 @@ export default function Home() {
                   <div className="flex gap-1 items-center">
                     {conn.connectionString && (
                       <div className="p-1.5 bg-accent/10 text-accent rounded-full" title="URL Mode">
-                        <Link className="w-3 h-3" />
+                        <LinkIcon className="w-3 h-3" />
                       </div>
                     )}
                     <button
@@ -833,13 +834,21 @@ export default function Home() {
 
           <footer className="pt-12 border-t border-border/50 flex flex-col items-center gap-6">
             <div className="flex items-center gap-4">
+              <Link
+                href="/documents"
+                className="group flex items-center gap-3 px-6 py-2.5 rounded-2xl bg-muted/30 hover:bg-accent/10 border border-border/50 hover:border-accent/20 transition-all font-sans"
+              >
+                <Book className="w-5 h-5 group-hover:text-accent group-hover:scale-110 transition-all text-muted-foreground/60" />
+                <span className="text-xs font-black uppercase tracking-widest opacity-60 group-hover:opacity-100 group-hover:text-accent transition-all">Documentation Center</span>
+              </Link>
+
               <a
                 href="https://github.com/nucrasenaa/db-editor"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex items-center gap-3 px-6 py-2.5 rounded-2xl bg-muted/30 hover:bg-accent/10 border border-border/50 hover:border-accent/20 transition-all"
               >
-                <Github className="w-5 h-5 group-hover:text-accent group-hover:scale-110 transition-all" />
+                <Github className="w-5 h-5 group-hover:text-accent group-hover:scale-110 transition-all text-muted-foreground/60" />
                 <span className="text-xs font-black uppercase tracking-widest opacity-60 group-hover:opacity-100 group-hover:text-accent transition-all">Source Repository</span>
               </a>
             </div>
