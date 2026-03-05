@@ -10,7 +10,13 @@ contextBridge.exposeInMainWorld('electron', {
         update: (args) => ipcRenderer.invoke('db:update', args),
         procSnippet: (args) => ipcRenderer.invoke('db:procedure-snippet', args),
         getDDL: (args) => ipcRenderer.invoke('db:get-ddl', args),
-        erd: (config) => ipcRenderer.invoke('db:erd', config)
+        erd: (config) => ipcRenderer.invoke('db:erd', config),
+        columns: (args) => ipcRenderer.invoke('db:columns', args),
+        performance: (config) => ipcRenderer.invoke('db:performance', config)
+    },
+    ai: {
+        test: (config) => ipcRenderer.invoke('ai:test', config),
+        generate: (args) => ipcRenderer.invoke('ai:generate', args)
     },
     window: {
         open: (args) => ipcRenderer.invoke('window:open', args)

@@ -27,6 +27,20 @@ export async function apiRequest(endpoint: string, method: string, body: any) {
         if (endpoint.includes('/api/db/erd')) {
             return await db.erd(body);
         }
+        if (endpoint.includes('/api/db/columns')) {
+            return await db.columns(body);
+        }
+        if (endpoint.includes('/api/db/performance')) {
+            return await db.performance(body);
+        }
+
+        // AI Mappings
+        if (endpoint.includes('/api/ai/test')) {
+            return await (window as any).electron.ai.test(body);
+        }
+        if (endpoint.includes('/api/ai/generate')) {
+            return await (window as any).electron.ai.generate(body);
+        }
     }
 
     // Fallback to standard fetch for Web

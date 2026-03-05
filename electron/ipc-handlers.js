@@ -488,6 +488,162 @@ function setupIpcHandlers() {
             return { success: false, message: error.message };
         }
     });
+
+    // 7. Get Columns
+    ipcMain.handle('db:columns', async (event, { config, table, schema }) => {
+        try {
+            const dialect = config.dbType || 'mssql';
+            const dbProxy = await getDbProxy(config);
+            try {
+                let query = '';
+                if (dialect === 'mssql') {
+                    const schemaPart = schema ? `AND TABLE_SCHEMA = '${schema.replace(/'/g, "''")}'` : '';
+                    query = `SELECT COLUMN_NAME as name FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${table.replace(/'/g, "''")}' ${schemaPart} ORDER BY ORDINAL_POSITION`;
+                } else if (dialect === 'postgres') {
+                    const schemaPart = schema ? `AND table_schema = '${schema.replace(/'/g, "''")}'` : "AND table_schema NOT IN ('information_schema', 'pg_catalog')";
+                    query = `SELECT column_name as name FROM information_schema.columns WHERE table_name = '${table.replace(/'/g, "''")}' ${schemaPart} ORDER BY ordinal_position`;
+                } else {
+                    const schemaPart = config.database ? `AND TABLE_SCHEMA = '${config.database.replace(/'/g, "''")}'` : '';
+                    query = `SELECT COLUMN_NAME as name FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '${table.replace(/'/g, "''")}' ${schemaPart} ORDER BY ORDINAL_POSITION`;
+                }
+                const result = await dbProxy.query(query);
+                return { success: true, columns: result.map(col => col.name || col.COLUMN_NAME || col.column_name) };
+            } finally {
+                await dbProxy.close();
+            }
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    });
+
+    // 8. Performance Data
+    ipcMain.handle('db:performance', async (event, config) => {
+        try {
+            const dialect = config.dbType || 'mssql';
+            const dbProxy = await getDbProxy(config);
+            try {
+                if (dialect === 'mssql') {
+                    const missingIndexQuery = `SELECT TOP 20 migs.avg_total_user_cost * (migs.avg_user_impact / 100.0) * (migs.user_seeks + migs.user_scans) AS [weighted_impact], mid.[statement] AS [table_name], mid.equality_columns, mid.inequality_columns, mid.included_columns, migs.avg_user_impact FROM sys.dm_db_missing_index_groups AS mig JOIN sys.dm_db_missing_index_group_stats AS migs ON migs.group_handle = mig.index_group_handle JOIN sys.dm_db_missing_index_details AS mid ON mid.index_handle = mig.index_handle WHERE DB_ID(DB_NAME()) = mid.database_id ORDER BY weighted_impact DESC;`;
+                    const expensiveQueriesQuery = `SELECT TOP 20 SUBSTRING(st.text, (qs.statement_start_offset/2) + 1, ((CASE statement_end_offset WHEN -1 THEN DATALENGTH(st.text) ELSE qs.statement_end_offset END - qs.statement_start_offset)/2) + 1) AS [query_text], qs.execution_count, qs.total_worker_time / 1000 AS [total_cpu_ms], qs.total_elapsed_time / 1000 AS [total_duration_ms] FROM sys.dm_exec_query_stats AS qs CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) AS st ORDER BY qs.total_worker_time DESC;`;
+                    const recordsets = await dbProxy.query(`${missingIndexQuery}; ${expensiveQueriesQuery};`);
+                    return { success: true, data: { missingIndexes: recordsets[0] || [], expensiveQueries: recordsets[1] || [] } };
+                } else if (dialect === 'postgres') {
+                    const missingIndexQuery = `SELECT relname AS table_name, seq_scan - idx_scan AS scan_diff, seq_scan, idx_scan FROM pg_stat_user_tables WHERE seq_scan > 0 ORDER BY seq_scan DESC LIMIT 20;`;
+                    const expensiveQueriesQuery = `SELECT query as query_text, calls as execution_count, total_exec_time as total_duration_ms FROM pg_stat_statements ORDER BY total_exec_time DESC LIMIT 20;`;
+                    const missingIndexes = await dbProxy.query(missingIndexQuery);
+                    let expensiveQueries = [];
+                    try { expensiveQueries = await dbProxy.query(expensiveQueriesQuery); } catch (e) { }
+                    return { success: true, data: { missingIndexes, expensiveQueries } };
+                }
+                return { success: false, message: `Advisor not supported for ${dialect} yet.` };
+            } finally {
+                await dbProxy.close();
+            }
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    });
+
+    // 9. AI Test
+    ipcMain.handle('ai:test', async (event, config) => {
+        try {
+            const { provider, apiKey, model, endpoint } = config;
+            if (provider === 'openai') {
+                const res = await fetch('https://api.openai.com/v1/models', { headers: { 'Authorization': `Bearer ${apiKey}` } });
+                if (res.ok) return { success: true, message: 'Connected to OpenAI!' };
+                const data = await res.json();
+                return { success: false, message: data.error?.message || 'Invalid API Key' };
+            }
+            if (provider === 'gemini') {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+                if (res.ok) return { success: true, message: 'Gemini API key is valid!' };
+                const data = await res.json();
+                return { success: false, message: data.error?.message || 'Invalid API Key' };
+            }
+            if (provider === 'anthropic') {
+                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+                    body: JSON.stringify({ model: model || 'claude-3-haiku-20240307', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] })
+                });
+                if (res.ok) return { success: true, message: 'Anthropic connection verified!' };
+                const data = await res.json();
+                return { success: false, message: data.error?.message || 'Invalid API Key' };
+            }
+            if (provider === 'zai') {
+                const baseUrl = endpoint || 'https://api.z.ai/api/coding/paas/v4';
+                const testUrl = baseUrl.endsWith('/models') ? baseUrl : `${baseUrl}/models`;
+                const res = await fetch(testUrl, { headers: { 'Authorization': `Bearer ${apiKey}` } });
+                if (res.ok) return { success: true, message: 'Z.ai PAAS v4 connected!' };
+                return { success: false, message: 'Z.ai connection failed.' };
+            }
+            if (provider === 'ollama') {
+                const baseUrl = endpoint || 'http://localhost:11434';
+                const res = await fetch(`${baseUrl}/api/tags`);
+                if (res.ok) return { success: true, message: 'Ollama is running!' };
+                return { success: false, message: 'Could not reach Ollama.' };
+            }
+            return { success: false, message: 'Provider test not implemented in Electron yet.' };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    });
+
+    // 10. AI Generate
+    ipcMain.handle('ai:generate', async (event, { prompt, schema, config, dbType }) => {
+        try {
+            const { provider, apiKey, model, endpoint } = config;
+
+            // Generate Schema Context (Simplified version of lib/ai-utils.ts)
+            let schemaContext = "DATABASE SCHEMA:\n";
+            if (schema && schema.tables) {
+                schema.tables.forEach(t => {
+                    const cols = schema.columns?.filter(c => c.tableName === t.name && c.tableSchema === (t.schema || 'dbo')) || [];
+                    schemaContext += `Table: ${t.name} [${cols.map(c => c.name).join(', ')}]\n`;
+                });
+            }
+
+            const systemPrompt = `Expert SQL Generator for ${dbType || 'MSSQL'}. ONLY return SQL. No markdown. Schema:\n${schemaContext}`;
+
+            let url = '', headers = { 'Content-Type': 'application/json' }, body = {};
+
+            if (provider === 'openai') {
+                url = 'https://api.openai.com/v1/chat/completions';
+                headers['Authorization'] = `Bearer ${apiKey}`;
+                body = { model: model || 'gpt-4o', messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }] };
+            } else if (provider === 'zai') {
+                const baseUrl = endpoint || 'https://api.z.ai/api/coding/paas/v4';
+                url = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
+                headers['Authorization'] = `Bearer ${apiKey}`;
+                body = { model: model || 'GLM-4.7', messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }] };
+            } else if (provider === 'ollama') {
+                url = `${endpoint || 'http://localhost:11434'}/api/chat`;
+                body = { model: model || 'llama3', stream: false, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }] };
+            } else if (provider === 'gemini') {
+                url = `https://generativelanguage.googleapis.com/v1beta/models/${model || 'gemini-1.5-flash'}:generateContent?key=${apiKey}`;
+                body = { contents: [{ parts: [{ text: `${systemPrompt}\n\nUSER PROMPT: ${prompt}` }] }] };
+            } else if (provider === 'anthropic') {
+                url = 'https://api.anthropic.com/v1/messages';
+                headers['x-api-key'] = apiKey; headers['anthropic-version'] = '2023-06-01';
+                body = { model: model || 'claude-3-5-sonnet-latest', max_tokens: 1024, messages: [{ role: 'user', content: `${systemPrompt}\n\nUSER PROMPT: ${prompt}` }] };
+            }
+
+            const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+            const data = await response.json();
+            if (!response.ok) return { success: false, message: data.error?.message || 'AI Error' };
+
+            let sql = '';
+            if (provider === 'openai' || provider === 'zai') sql = data.choices[0]?.message?.content || '';
+            else if (provider === 'ollama') sql = data.message?.content || '';
+            else if (provider === 'gemini') sql = data.candidates[0]?.content?.parts[0]?.text || '';
+            else if (provider === 'anthropic') sql = data.content[0]?.text || '';
+
+            sql = sql.replace(/```sql\n?/gi, '').replace(/```\n?/g, '').trim();
+            return { success: true, sql };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    });
 }
 
 module.exports = { setupIpcHandlers };
