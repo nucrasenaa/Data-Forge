@@ -63,6 +63,8 @@ interface Tab {
   executionPlan?: any[];
   showPlan?: boolean;
   error?: string;
+  aiThinking?: boolean;
+  aiStatus?: string;
 }
 
 export default function Home() {
@@ -76,12 +78,36 @@ export default function Home() {
   const [metadata, setMetadata] = useState<any>(null);
   const [allMetadata, setAllMetadata] = useState<Record<string, any>>({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const autoFetchedTabs = React.useRef<Set<string>>(new Set());
 
   const activeTab = tabs.find(t => t.id === activeTabId);
 
-  // Initial tab setup after connection
+  // Initial tab setup after connection: Load from cache or set default
   useEffect(() => {
     if (config && tabs.length === 0) {
+      const connectionId = config.connectionString
+        ? `url-${config.connectionString}`
+        : `${config.server}:${config.port}-${config.user}-${config.database}`;
+
+      const savedData = localStorage.getItem(`tabs_${connectionId}`);
+      if (savedData) {
+        try {
+          const { tabs: savedTabs, activeTabId: savedActiveTabId } = JSON.parse(savedData);
+          if (savedTabs && savedTabs.length > 0) {
+            const restoredTabs = savedTabs.map((t: any) => ({
+              ...t,
+              queryResult: { data: [], columns: [], totalRows: 0 },
+              loading: false
+            }));
+            setTabs(restoredTabs);
+            setActiveTabId(savedActiveTabId || restoredTabs[0].id);
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to restore tabs", e);
+        }
+      }
+
       const dialect = config.dbType || 'mssql';
       const initialTab: Tab = {
         id: 'sql-main',
@@ -101,6 +127,34 @@ export default function Home() {
       setActiveTabId(initialTab.id);
     }
   }, [config, tabs.length]);
+
+  // Save tabs to localStorage whenever they change
+  useEffect(() => {
+    if (config && tabs.length > 0) {
+      const connectionId = config.connectionString
+        ? `url-${config.connectionString}`
+        : `${config.server}:${config.port}-${config.user}-${config.database}`;
+
+      const tabsToSave = tabs.map(tab => ({
+        id: tab.id,
+        type: tab.type,
+        title: tab.title,
+        database: tab.database,
+        sqlQuery: tab.sqlQuery,
+        page: tab.page,
+        pageSize: tab.pageSize,
+        sortColumn: tab.sortColumn,
+        sortDir: tab.sortDir,
+        filter: tab.filter,
+        showFilter: tab.showFilter
+      }));
+
+      localStorage.setItem(`tabs_${connectionId}`, JSON.stringify({
+        tabs: tabsToSave,
+        activeTabId
+      }));
+    }
+  }, [tabs, activeTabId, config]);
 
   // Load history on mount
   useEffect(() => {
@@ -291,6 +345,26 @@ export default function Home() {
       if (!options.silent) updateTab(targetTabId, { loading: false });
     }
   }, [config, activeTabId, tabs]);
+
+  // Clear auto-fetch tracking on disconnect
+  useEffect(() => {
+    if (!config) {
+      autoFetchedTabs.current.clear();
+    }
+  }, [config]);
+
+  // Auto-fetch data for restored table tabs when they become active
+  useEffect(() => {
+    if (config && activeTabId && activeTab && activeTab.type === 'table' && !activeTab.loading && !autoFetchedTabs.current.has(activeTabId)) {
+      autoFetchedTabs.current.add(activeTabId);
+      if (activeTab.sqlQuery) {
+        executeQuery(activeTab.sqlQuery, { tabId: activeTabId, includeCount: true, silent: true });
+      }
+    } else if (activeTabId && activeTab && activeTab.type !== 'table') {
+      // Mark non-table tabs as "fetched" so we don't keep checking them
+      autoFetchedTabs.current.add(activeTabId);
+    }
+  }, [config, activeTabId, activeTab, executeQuery]);
 
   const handleObjectSelect = async (fullName: string, type: 'table' | 'view' | 'procedure' | 'synonym', databaseName?: string) => {
     const db = databaseName || config.database;
@@ -878,8 +952,8 @@ export default function Home() {
                     )}
 
                     {activeTab.error ? (
-                      <div className="flex-1 flex flex-col items-center justify-center p-8 animate-in fade-in zoom-in-95 duration-300">
-                        <div className="max-w-2xl w-full bg-red-500/5 border border-red-500/20 rounded-3xl p-8 shadow-2xl shadow-red-500/5 transition-all hover:bg-red-500/10 group">
+                      <div className="flex-1 flex flex-col items-center justify-start p-8 animate-in fade-in zoom-in-95 duration-300 overflow-y-auto custom-scrollbar">
+                        <div className="max-w-2xl w-full bg-red-500/5 border border-red-500/20 rounded-3xl p-8 shadow-2xl shadow-red-500/5 transition-all hover:bg-red-500/10 group mb-8">
                           <div className="flex items-center gap-4 mb-6">
                             <div className="p-4 bg-red-500/10 rounded-2xl text-red-500 group-hover:scale-110 transition-transform">
                               <AlertCircle className="w-8 h-8" />
@@ -890,7 +964,7 @@ export default function Home() {
                             </div>
                           </div>
 
-                          <div className="bg-black/20 border border-red-500/10 rounded-2xl p-6 font-mono text-sm text-red-400 leading-relaxed break-all mb-8">
+                          <div className="bg-black/20 border border-red-500/10 rounded-2xl p-6 font-mono text-sm text-red-400 leading-relaxed whitespace-pre-wrap mb-8 max-h-[300px] overflow-y-auto custom-scrollbar">
                             {activeTab.error}
                           </div>
 
@@ -902,28 +976,63 @@ export default function Home() {
                                   alert('Please configure AI in settings first.');
                                   return;
                                 }
-                                updateTab(activeTab.id, { loading: true });
+
+                                const statuses = [
+                                  "Initializing AI Engine...",
+                                  "Analyzing SQL Syntax Error...",
+                                  "Checking Database Schema Metadata...",
+                                  "Generating Optimized SQL Fix...",
+                                  "Validating Proposed Solution..."
+                                ];
+
+                                updateTab(activeTab.id, { loading: true, aiThinking: true, aiStatus: statuses[0] });
+
+                                // Cycle through statuses every 1.5s
+                                let currentStatusIdx = 0;
+                                const statusInterval = setInterval(() => {
+                                  currentStatusIdx = (currentStatusIdx + 1) % statuses.length;
+                                  updateTab(activeTab.id, { aiStatus: statuses[currentStatusIdx] });
+                                }, 1500);
+
                                 try {
                                   const res = await apiRequest('/api/ai/generate', 'POST', {
-                                    prompt: `Fix this SQL error. ERROR: ${activeTab.error}\nQUERY: ${activeTab.sqlQuery}`,
+                                    prompt: `Fix this SQL error. Deeply analyze the error and schema to provide the correct SQL.\nERROR: ${activeTab.error}\nQUERY: ${activeTab.sqlQuery}`,
                                     schema: metadata,
                                     config: JSON.parse(aiConfig),
                                     dbType: config.dbType
                                   });
                                   if (res.success && res.sql) {
-                                    updateTab(activeTab.id, { sqlQuery: res.sql, error: undefined });
+                                    updateTab(activeTab.id, { sqlQuery: res.sql, error: undefined, aiThinking: false });
                                   } else {
+                                    updateTab(activeTab.id, { aiThinking: false });
                                     alert(res.message || 'AI could not fix this error.');
                                   }
                                 } catch (err: any) {
+                                  updateTab(activeTab.id, { aiThinking: false });
                                   alert(err.message || 'Error communicating with AI.');
                                 } finally {
-                                  updateTab(activeTab.id, { loading: false });
+                                  clearInterval(statusInterval);
+                                  updateTab(activeTab.id, { loading: false, aiThinking: false });
                                 }
                               }}
-                              className="flex-1 flex items-center justify-center gap-3 py-4 bg-purple-500 hover:bg-purple-600 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-purple-500/20 active:scale-[0.98]"
+                              disabled={activeTab.loading}
+                              className={cn(
+                                "flex-1 flex items-center justify-center gap-3 py-4 text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl active:scale-[0.98]",
+                                activeTab.aiThinking
+                                  ? "bg-purple-500/50 cursor-not-allowed text-white"
+                                  : "bg-purple-500 hover:bg-purple-600 text-white shadow-purple-500/20"
+                              )}
                             >
-                              <Sparkles className="w-4 h-4" /> Fix SQL with AI Assistant
+                              {activeTab.aiThinking ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                  AI IS BRAINSTORMING...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-4 h-4" /> Fix SQL with AI Assistant
+                                </>
+                              )}
                             </button>
                             <button
                               onClick={() => reloadData()}
@@ -932,6 +1041,24 @@ export default function Home() {
                               Retry
                             </button>
                           </div>
+
+                          {activeTab.aiThinking && (
+                            <div className="mt-8 pt-8 border-t border-red-500/10 animate-in slide-in-from-top-4 duration-500">
+                              <div className="flex items-center gap-4 mb-4">
+                                <div className="flex gap-1">
+                                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" />
+                                </div>
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-400 animate-pulse">
+                                  AI Analysis: {activeTab.aiStatus}
+                                </span>
+                              </div>
+                              <div className="h-1.5 w-full bg-purple-500/10 rounded-full overflow-hidden">
+                                <div className="h-full bg-purple-500 animate-[loading-bar_2s_infinite_linear]" />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ) : activeTab.showPlan && activeTab.executionPlan ? (

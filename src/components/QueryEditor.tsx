@@ -21,6 +21,7 @@ export default function QueryEditor({ onExecute, loading, metadata, allMetadata,
     const metadataRef = useRef(metadata);
     const allMetadataRef = useRef(allMetadata);
     const queryRef = useRef(query);
+    const editorRef = useRef<any>(null);
 
     // Sync query to ref for auto-execute listener
     useEffect(() => {
@@ -52,13 +53,16 @@ export default function QueryEditor({ onExecute, loading, metadata, allMetadata,
     };
 
     const handleEditorDidMount = (editor: any, monaco: any) => {
+        editorRef.current = editor;
         // ... (existing actions)
         editor.addAction({
             id: 'execute-query',
             label: 'Execute SQL',
             keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
             run: () => {
-                const val = editor.getValue();
+                const selection = editor.getSelection();
+                const selectedText = editor.getModel().getValueInRange(selection);
+                const val = selectedText.trim() || editor.getValue();
                 if (val.trim()) onExecute(val);
             }
         });
@@ -242,7 +246,17 @@ export default function QueryEditor({ onExecute, loading, metadata, allMetadata,
                         Explain
                     </button>
                     <button
-                        onClick={() => onExecute(query)}
+                        onClick={() => {
+                            let queryToRun = query;
+                            if (editorRef.current) {
+                                const selection = editorRef.current.getSelection();
+                                const selectedText = editorRef.current.getModel().getValueInRange(selection);
+                                if (selectedText.trim()) {
+                                    queryToRun = selectedText;
+                                }
+                            }
+                            onExecute(queryToRun);
+                        }}
                         disabled={loading || !query.trim()}
                         className="flex items-center gap-2 px-4 py-1.5 bg-accent hover:bg-accent/90 disabled:bg-accent/50 text-accent-foreground text-xs font-bold rounded-md transition-all shadow-lg shadow-accent/20"
                     >
