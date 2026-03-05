@@ -398,62 +398,59 @@ export default function Sidebar({ config, onObjectSelect, onMetadataLoad, select
                         )}
                     </div>
 
-                    {/* AI Forge */}
-                    <div className="mx-3 mb-2 mt-auto pt-4 border-t border-border/30 space-y-3 shrink-0">
-                        <div className="flex items-center gap-2 px-2 text-[9px] font-black uppercase tracking-widest text-purple-500/60">
-                            <Sparkles className="w-2.5 h-2.5" /> AI Forge
+                    {/* Advanced Forge Tools */}
+                    <div className="mx-3 mb-4 mt-auto pt-4 border-t border-border/30 space-y-3 shrink-0">
+                        <div className="flex items-center gap-2 px-2 text-[9px] font-black uppercase tracking-widest text-accent opacity-60">
+                            <Zap className="w-2.5 h-2.5" /> Advanced Forge
                         </div>
-                        <div className="grid grid-cols-1 gap-2">
+                        <div className="grid grid-cols-3 gap-2">
                             <button
                                 onClick={() => onAddClick('ai-settings' as any)}
-                                className="flex items-center justify-center gap-3 p-3 rounded-xl bg-purple-500/5 hover:bg-purple-600/10 border border-purple-500/10 transition-all group"
+                                className="flex flex-col items-center gap-2 p-2.5 rounded-xl bg-purple-500/5 hover:bg-purple-600/10 border border-purple-500/10 transition-all group"
+                                title="AI Engine & Settings"
                             >
                                 <Sparkles className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-[8px] font-black uppercase tracking-widest text-purple-400/70">AI Engine & Provider Management</span>
+                                <span className="text-[8px] font-bold uppercase tracking-tighter text-purple-400/70">AI</span>
                             </button>
-                        </div>
-                    </div>
-
-                    {/* Enterprise Forge */}
-                    <div className="mx-3 mb-4 mt-2 pt-4 border-t border-border/30 space-y-3 shrink-0">
-                        <div className="flex items-center gap-2 px-2 text-[9px] font-black uppercase tracking-widest text-emerald-500/60">
-                            <Zap className="w-2.5 h-2.5" /> Enterprise Forge
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
                             <button
                                 onClick={() => onAddClick('server-monitor' as any)}
-                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 transition-all group"
+                                className="flex flex-col items-center gap-2 p-2.5 rounded-xl bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 transition-all group"
+                                title="Server Health & Monitor"
                             >
                                 <Activity className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-[8px] font-black uppercase tracking-tighter text-emerald-400/70">Health</span>
+                                <span className="text-[8px] font-bold uppercase tracking-tighter text-emerald-400/70">Health</span>
                             </button>
                             <button
                                 onClick={() => onAddClick('user-manager' as any)}
-                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-indigo-500/5 hover:bg-indigo-500/10 border border-indigo-500/10 transition-all group"
+                                className="flex flex-col items-center gap-2 p-2.5 rounded-xl bg-indigo-500/5 hover:bg-indigo-500/10 border border-indigo-500/10 transition-all group"
+                                title="User & Permission Manager"
                             >
                                 <Users className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-[8px] font-black uppercase tracking-tighter text-indigo-400/70">Users</span>
+                                <span className="text-[8px] font-bold uppercase tracking-tighter text-indigo-400/70">Users</span>
                             </button>
                             <button
                                 onClick={() => onAddClick('schema-compare' as any)}
-                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/10 transition-all group"
+                                className="flex flex-col items-center gap-2 p-2.5 rounded-xl bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/10 transition-all group"
+                                title="Schema Comparison (Diff)"
                             >
                                 <GitCompare className="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-[8px] font-black uppercase tracking-tighter text-orange-400/70">Diff</span>
+                                <span className="text-[8px] font-bold uppercase tracking-tighter text-orange-400/70">Diff</span>
                             </button>
                             <button
                                 onClick={() => onAddClick('er-diagram' as any)}
-                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 transition-all group"
+                                className="flex flex-col items-center gap-2 p-2.5 rounded-xl bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 transition-all group"
+                                title="ER Architect (Visual ERD)"
                             >
                                 <Share2 className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-[8px] font-black uppercase tracking-tighter text-blue-400/70">Architect</span>
+                                <span className="text-[8px] font-bold uppercase tracking-tighter text-blue-400/70">ERD</span>
                             </button>
                             <button
                                 onClick={() => onAddClick('query-builder')}
-                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-purple-500/5 hover:bg-purple-600/10 border border-purple-500/10 transition-all group"
+                                className="flex flex-col items-center gap-2 p-2.5 rounded-xl bg-purple-500/5 hover:bg-purple-600/10 border border-purple-500/10 transition-all group"
+                                title="Visual Query Builder"
                             >
                                 <LayoutDashboard className="w-3.5 h-3.5 text-purple-400 group-hover:scale-110 transition-transform" />
-                                <span className="text-[8px] font-black uppercase tracking-tighter text-purple-400/70">Builder</span>
+                                <span className="text-[8px] font-bold uppercase tracking-tighter text-purple-400/70">Builder</span>
                             </button>
                         </div>
                     </div>
