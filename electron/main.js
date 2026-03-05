@@ -41,7 +41,16 @@ function setupProtocol() {
         const normalizedPath = pathname.startsWith('/') ? pathname.substring(1) : pathname;
         let filePath = path.join(app.getAppPath(), 'out', normalizedPath);
 
-        if (!fs.existsSync(filePath)) {
+        // Handle directories and fallbacks
+        const checkPath = (p) => fs.existsSync(p) && !fs.statSync(p).isDirectory();
+        const isDir = (p) => fs.existsSync(p) && fs.statSync(p).isDirectory();
+
+        if (isDir(filePath)) {
+            const indexHtml = path.join(filePath, 'index.html');
+            if (fs.existsSync(indexHtml)) {
+                filePath = indexHtml;
+            }
+        } else if (!fs.existsSync(filePath)) {
             if (fs.existsSync(filePath + '.html')) {
                 filePath += '.html';
             } else if (fs.existsSync(path.join(filePath, 'index.html'))) {

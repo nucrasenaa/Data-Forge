@@ -23,7 +23,28 @@ export default async function DocPage() {
             </div>
 
             <div className="prose-theme-custom">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                        a: ({ node, ...props }) => {
+                            // Rewrite links like ./USER_GUIDE.md to /documents/USER_GUIDE
+                            let href = props.href || '';
+                            if (href.endsWith('.md')) {
+                                const slug = href.replace('./', '').replace('.md', '');
+                                if (slug === 'INDEX') {
+                                    href = '/documents';
+                                } else if (slug.startsWith('../')) {
+                                    // Handle parent links if needed, e.g. ../RELEASE_NOTES.md
+                                    href = '/' + slug.replace('../', '').replace('.md', '');
+                                } else {
+                                    href = `/documents/${slug}`;
+                                }
+                                return <Link href={href} {...props}>{props.children}</Link>;
+                            }
+                            return <a {...props}>{props.children}</a>;
+                        }
+                    }}
+                >
                     {content}
                 </ReactMarkdown>
             </div>
