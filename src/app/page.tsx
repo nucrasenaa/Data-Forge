@@ -10,7 +10,7 @@ import MiniDashboards from '@/components/MiniDashboards';
 import MockDataGenerator from '@/components/MockDataGenerator';
 import { Database, LogOut, Table as TableIcon, LayoutDashboard, Terminal, Search, Filter, X, Plus, Server, Trash2, Globe, User, Link as LinkIcon, Maximize2, Github, PlusCircle, Layers, Zap, RotateCcw, Share2, Sparkles, AlertCircle, Menu, Sun, Moon, Book, PieChart, Network } from 'lucide-react';
 import Link from 'next/link';
-import { cn, encryptValue, decryptValue } from '@/lib/utils';
+import { cn, encryptValue, decryptValue, decryptValueDetailed } from '@/lib/utils';
 import { apiRequest } from '@/lib/api';
 import TableDesigner from '@/components/TableDesigner';
 import ImportWizard from '@/components/ImportWizard';
@@ -202,11 +202,28 @@ export default function Home() {
         const parsed = JSON.parse(savedHistory);
         // Decrypt passwords if present
         const loadHistory = async () => {
-          const decrypted = await Promise.all(parsed.map(async (item: any) => ({
-            ...item,
-            password: item.password ? await decryptValue(item.password) : undefined
-          })));
+          let needsMigration = false;
+          const decrypted = await Promise.all(parsed.map(async (item: any) => {
+            const { value, decrypted } = await decryptValueDetailed(item.password);
+            if (!decrypted && item.password && item.password.trim().length > 0) {
+              needsMigration = true;
+            }
+            return {
+              ...item,
+              password: value
+            };
+          }));
+
           setHistory(decrypted);
+
+          if (needsMigration) {
+            // Re-save entire history with encryption
+            const encryptedHistory = await Promise.all(decrypted.map(async (item) => ({
+              ...item,
+              password: await encryptValue(item.password)
+            })));
+            localStorage.setItem('db_history', JSON.stringify(encryptedHistory));
+          }
         };
         loadHistory();
       } catch (e) {
@@ -361,7 +378,7 @@ export default function Home() {
       });
 
       if (data.success) {
-        saveToHistory({
+        await saveToHistory({
           sql: query,
           database: targetDb,
           success: true,
@@ -390,7 +407,7 @@ export default function Home() {
           error: undefined
         });
       } else {
-        saveToHistory({
+        await saveToHistory({
           sql: query,
           database: targetDb,
           success: false,
@@ -405,7 +422,7 @@ export default function Home() {
       }
     } catch (err: any) {
       console.error(err);
-      saveToHistory({
+      await saveToHistory({
         sql: query,
         database: targetDb,
         success: false,
@@ -534,7 +551,7 @@ export default function Home() {
 
       if (data.success) {
         // Save to history
-        saveToHistory({
+        await saveToHistory({
           sql: data.script,
           database: database,
           success: true,
@@ -560,7 +577,7 @@ export default function Home() {
         setActiveTabId(newTab.id);
       } else {
         // Save failed query to history
-        saveToHistory({
+        await saveToHistory({
           sql: `GET DDL FOR ${fullName} (${type})`, // Placeholder for failed DDL fetch
           database: database,
           success: false,
@@ -571,7 +588,7 @@ export default function Home() {
     } catch (err: any) {
       console.error(err);
       // Save failed query to history
-      saveToHistory({
+      await saveToHistory({
         sql: `GET DDL FOR ${fullName} (${type})`, // Placeholder for failed DDL fetch
         database: database,
         success: false,

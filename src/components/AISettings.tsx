@@ -22,7 +22,7 @@ import {
     X
 } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
-import { cn, encryptValue, decryptValue } from '@/lib/utils';
+import { cn, encryptValue, decryptValue, decryptValueDetailed } from '@/lib/utils';
 
 interface AISettingsProps {
     onClose: () => void;
@@ -83,8 +83,14 @@ export default function AISettings({ onClose }: AISettingsProps) {
             try {
                 const parsed = JSON.parse(saved);
                 const loadConfig = async () => {
-                    const decryptedApiKey = await decryptValue(parsed.apiKey);
-                    setConfig({ ...parsed, apiKey: decryptedApiKey || '' });
+                    const { value, decrypted } = await decryptValueDetailed(parsed.apiKey);
+                    setConfig({ ...parsed, apiKey: value || '' });
+
+                    if (!decrypted && parsed.apiKey && parsed.apiKey.trim().length > 0) {
+                        // Migration: Encrypt plain API key
+                        const encrypted = await encryptValue(value);
+                        localStorage.setItem('ai_config', JSON.stringify({ ...parsed, apiKey: encrypted }));
+                    }
                 };
                 loadConfig();
             } catch (e) {
@@ -95,15 +101,19 @@ export default function AISettings({ onClose }: AISettingsProps) {
 
     const handleSave = async () => {
         setLoading(true);
-        // Encrypt API key before saving
-        const encryptedApiKey = await encryptValue(config.apiKey);
-        const configToSave = { ...config, apiKey: encryptedApiKey };
+        try {
+            // Encrypt API key before saving
+            const encryptedApiKey = await encryptValue(config.apiKey);
+            const configToSave = { ...config, apiKey: encryptedApiKey };
 
-        localStorage.setItem('ai_config', JSON.stringify(configToSave));
-
-        setTimeout(() => {
-            setLoading(false);
-        }, 500);
+            localStorage.setItem('ai_config', JSON.stringify(configToSave));
+        } catch (e) {
+            console.error('Failed to save AI config', e);
+        } finally {
+            setTimeout(() => {
+                setLoading(false);
+            }, 500);
+        }
     };
 
     const handleTest = async () => {

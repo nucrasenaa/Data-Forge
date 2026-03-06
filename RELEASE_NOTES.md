@@ -1,19 +1,26 @@
 # 🚀 Data Forge Release Notes
 
 ## [v1.2.1] - 2026-03-06
-### Hardening & Enterprise Security
 
-#### 🛡️ Hardware-Backed Credential Security
-- **OS-Level Encryption**: Implemented Electron's `safeStorage` API. Database passwords and AI API keys are now encrypted using the operating system's native secure keychain (Windows DPAPI, macOS Keychain).
-- **Secure Persistence**: Sensitive data is no longer stored as plaintext in `localStorage`. 
-- **Encryption Bridge**: Integrated a cryptographic bridge between the Next.js renderer and Electron main process to handle secure key exchange.
+### 🛡️ Security & Hardening
+- **Universal LocalStorage Encryption**: Implemented a unified encryption layer using Electron `safeStorage` for Desktop and **Web Crypto (AES-GCM)** for Web.
+- **Encrypted Sensitive Data**: SQL Query History, Bookmarks, and AI API Keys are now fully encrypted at rest.
+- **Automatic Security Migration**: Plain-text data from older versions is automatically detected and migrated to the encrypted format upon first load.
+- **SQL Injection Prevention**: Hardened identifier sanitization for table/column names and whitelisted sort parameters.
+- **Improved Read-Only Enforcement**: destructive SQL command detection is now more robust by stripping all comment types before validation.
 
-#### ⚔️ Advanced SQL Injection Mitigation
-- **Identifier Sanitization**: Added strict whitelisting for all dynamic SQL identifiers (Table/Column/Database names) in `UPDATE` and `ORDER BY` clauses across all dialects.
+### ✨ UX & Workflow Improvements
+- **"Close All Tabs" Feature**: Added a dedicated button (with confirmation) at the left of the tab bar to quickly clear your workspace.
+- **Visual Query Builder Auto-Execute**: Generated SQL commands now automatically run when clicking "Execute", removing the need for a second click in the query tab.
+- **Premium Empty States**: Redesigned the "No Data" state in tables with modern icons, glowing effects, and clearer secondary guidance.
+- **Smart Reset Controls**: The "Reset to Page 1" button now only appears when necessary (e.g., when not on the first page).
+
+### 🐛 Bug Fixes
+- Fixed an issue where the generated query from the Visual Query Builder required manual execution.
+- Resolved identifier escaping issues for PostgreSQL and MSSQL during data updates.
+- Improved URL validation for IPC window handlers.
 - **Whitelist Ordering**: The `orderBy` and `orderDir` parameters are now strictly sanitized to prevent identifier-based SQL injection.
 - **Quoting Logic**: Refined dialect-aware quoting (`[]` for MSSQL, `""` for Postgres, ` `` ` for MySQL) to ensure structural integrity during query generation.
-
-#### 🧊 Hardened Safety Controls
 - **Enhanced Read-Only Mode**: The safety engine now strips **all SQL comments** (line and block styles) before validation. This prevents bypass attempts that use commented-out destructive commands.
 - **IPC URL Validation**: Restricted the `window:open` handler to only allow internal application routes, preventing unauthorized external navigation from the renderer.
 

@@ -15,8 +15,16 @@ export default function BookmarkPanel({ onSelectQuery }: BookmarkPanelProps) {
     const [search, setSearch] = useState('');
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
-        setBookmarks(getBookmarks());
+        const load = async () => {
+            setLoading(true);
+            const data = await getBookmarks();
+            setBookmarks(data);
+            setLoading(false);
+        };
+        load();
     }, []);
 
     const filteredBookmarks = bookmarks.filter(item =>

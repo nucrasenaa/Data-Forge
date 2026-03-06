@@ -15,8 +15,16 @@ export default function HistoryPanel({ onSelectQuery }: HistoryPanelProps) {
     const [search, setSearch] = useState('');
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
-        setHistory(getHistory());
+        const load = async () => {
+            setLoading(true);
+            const data = await getHistory();
+            setHistory(data);
+            setLoading(false);
+        };
+        load();
     }, []);
 
     const filteredHistory = history.filter(item =>

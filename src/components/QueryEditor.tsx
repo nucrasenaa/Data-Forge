@@ -100,12 +100,12 @@ export default function QueryEditor({ onExecute, loading, metadata, allMetadata,
             id: 'save-bookmark',
             label: 'Save Bookmark',
             keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
-            run: () => {
+            run: async () => {
                 const val = editor.getValue();
                 if (val.trim()) {
                     const name = prompt('Enter a name for this bookmark:');
                     if (name) {
-                        saveBookmark(name, val);
+                        await saveBookmark(name, val);
                         alert('Query bookmarked successfully!');
                     }
                 }
@@ -249,10 +249,10 @@ export default function QueryEditor({ onExecute, loading, metadata, allMetadata,
                 </div>
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => {
+                        onClick={async () => {
                             const name = prompt('Enter a name for this bookmark:');
                             if (name) {
-                                saveBookmark(name, query);
+                                await saveBookmark(name, query);
                                 alert('Query bookmarked successfully!');
                             }
                         }}
