@@ -19,7 +19,10 @@ import {
     ChevronDown,
     Share2,
     Table as TableIcon,
-    Trash2
+    Trash2,
+    EyeOff,
+    Eye,
+    ShieldCheck,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { cn } from '@/lib/utils';
@@ -63,6 +66,63 @@ export default function DataTable({
     const [isSaving, setIsSaving] = useState(false);
     const [showExport, setShowExport] = useState(false);
     const [selectedRows, setSelectedRows] = useState<number[]>([]);
+    const [maskingEnabled, setMaskingEnabled] = useState(true);
+    const [revealedCells, setRevealedCells] = useState<Set<string>>(new Set());
+
+    // Detect sensitive columns by name patterns
+    const SENSITIVE_PATTERNS = [
+        /password/i, /passwd/i, /pwd/i, /secret/i,
+        /email/i, /e_mail/i,
+        /phone/i, /mobile/i, /tel/i, /fax/i,
+        /ssn/i, /social.?sec/i, /national.?id/i, /tax.?id/i, /passport/i,
+        /credit.?card/i, /card.?num/i, /cvv/i, /ccv/i, /card_no/i,
+        /bank.?acc/i, /account.?no/i, /iban/i, /routing/i,
+        /dob/i, /birth.?date/i, /date.?of.?birth/i,
+        /salary/i, /wage/i, /income/i, /compensation/i,
+        /token/i, /api.?key/i, /access.?key/i, /secret.?key/i, /private.?key/i,
+        /address/i, /street/i, /zip/i, /postcode/i,
+        /pin/i, /otp/i,
+    ];
+
+    const sensitiveColumns = new Set(
+        columns.filter(col => SENSITIVE_PATTERNS.some(rx => rx.test(col)))
+    );
+
+    const maskValue = (val: any, col: string): string => {
+        if (!maskingEnabled) return val === null ? 'NULL' : String(val);
+        if (!sensitiveColumns.has(col)) return val === null ? 'NULL' : String(val);
+        if (val === null) return 'NULL';
+        const str = String(val);
+        // Email: show first 2 chars then *** @domain
+        if (/email/i.test(col) && str.includes('@')) {
+            const [local, domain] = str.split('@');
+            return local.slice(0, 2) + '•••@' + domain;
+        }
+        // Phone: show last 4 digits
+        if (/phone|mobile|tel/i.test(col)) {
+            return '•••-•••-' + str.replace(/\D/g, '').slice(-4);
+        }
+        // Card: show last 4
+        if (/credit|card/i.test(col)) {
+            return '•••• •••• •••• ' + str.replace(/\D/g, '').slice(-4);
+        }
+        // Default: mask all but first + last char
+        if (str.length <= 2) return '••';
+        return str[0] + '•'.repeat(Math.min(str.length - 2, 8)) + str[str.length - 1];
+    };
+
+    const toggleReveal = (rowIndex: number, col: string) => {
+        const key = `${rowIndex}__${col}`;
+        setRevealedCells(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key); else next.add(key);
+            return next;
+        });
+    };
+
+    const isCellRevealed = (rowIndex: number, col: string): boolean => {
+        return revealedCells.has(`${rowIndex}__${col}`);
+    };
 
     const inputRef = useRef<HTMLInputElement>(null);
     const exportRef = useRef<HTMLDivElement>(null);
@@ -249,7 +309,14 @@ export default function DataTable({
                                     className="px-4 py-3 font-semibold text-muted-foreground uppercase tracking-[0.2em] text-[9px] whitespace-nowrap border-r border-border/50 last:border-r-0 cursor-pointer hover:bg-muted transition-colors group min-w-[120px] max-w-[400px]"
                                 >
                                     <div className="flex items-center justify-between gap-2">
-                                        <span className="truncate">{col}</span>
+                                        <div className="flex items-center gap-1.5 truncate">
+                                            {sensitiveColumns.has(col) && maskingEnabled && (
+                                                <span title="Sensitive column — masked">
+                                                    <ShieldCheck className="w-3 h-3 text-amber-500 shrink-0" />
+                                                </span>
+                                            )}
+                                            <span className="truncate">{col}</span>
+                                        </div>
                                         <div className="shrink-0">
                                             {sortColumn === col ? (
                                                 sortDir === 'ASC' ? <ArrowUp className="w-3 h-3 text-accent" /> : <ArrowDown className="w-3 h-3 text-accent" />
@@ -280,15 +347,22 @@ export default function DataTable({
                                 </td>
                                 {columns.map((col) => {
                                     const isEditing = editingCell?.rowIndex === i && editingCell?.col === col;
+                                    const isSensitive = sensitiveColumns.has(col);
+                                    const isRevealed = isCellRevealed(i, col);
+                                    const shouldMask = maskingEnabled && isSensitive && !isRevealed;
+                                    const rawVal = row[col];
+                                    const displayVal = shouldMask ? maskValue(rawVal, col) : (rawVal === null ? 'NULL' : String(rawVal));
                                     return (
                                         <td
                                             key={col}
-                                            onDoubleClick={() => handleStartEdit(i, col, row[col])}
+                                            onDoubleClick={() => handleStartEdit(i, col, rawVal)}
                                             className={cn(
                                                 "px-4 py-2 font-mono text-xs border-r border-border/10 last:border-r-0 max-w-[400px] relative transition-all",
-                                                isEditing ? "p-0" : "truncate cursor-text hover:bg-accent/5"
+                                                isEditing ? "p-0" : "truncate hover:bg-accent/5",
+                                                shouldMask ? "cursor-pointer" : "cursor-text"
                                             )}
-                                            title={isEditing ? '' : String(row[col])}
+                                            title={isEditing ? '' : (shouldMask ? 'Click to reveal' : String(rawVal))}
+                                            onClick={shouldMask ? () => toggleReveal(i, col) : undefined}
                                         >
                                             {isEditing ? (
                                                 <div className="flex items-center h-full gap-1 p-1 bg-card">
@@ -319,8 +393,14 @@ export default function DataTable({
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <span className={cn(row[col] === null && "text-muted-foreground/30 italic text-[10px]")}>
-                                                    {row[col] === null ? "NULL" : String(row[col])}
+                                                <span className={cn(
+                                                    rawVal === null && !shouldMask && "text-muted-foreground/30 italic text-[10px]",
+                                                    shouldMask && "text-muted-foreground/40 tracking-widest select-none"
+                                                )}>
+                                                    {displayVal}
+                                                    {shouldMask && (
+                                                        <Eye className="inline w-3 h-3 ml-1 opacity-40 hover:opacity-100 transition-opacity" />
+                                                    )}
                                                 </span>
                                             )}
                                         </td>
@@ -369,6 +449,21 @@ export default function DataTable({
                                 className="flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/20 md:ml-2 animate-in fade-in"
                             >
                                 <Trash2 className="w-3.5 h-3.5" /> Drop ({selectedRows.length})
+                            </button>
+                        )}
+                        {sensitiveColumns.size > 0 && (
+                            <button
+                                onClick={() => { setMaskingEnabled(m => !m); setRevealedCells(new Set()); }}
+                                className={cn(
+                                    "flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border md:ml-2",
+                                    maskingEnabled
+                                        ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border-amber-500/20"
+                                        : "bg-muted/50 hover:bg-muted text-muted-foreground border-border/50"
+                                )}
+                                title={maskingEnabled ? `Masking ON — ${sensitiveColumns.size} sensitive column(s) protected` : 'Masking OFF — data exposed'}
+                            >
+                                {maskingEnabled ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                {maskingEnabled ? `Masked (${sensitiveColumns.size})` : 'Unmasked'}
                             </button>
                         )}
                         <div className="md:hidden flex items-center gap-2">

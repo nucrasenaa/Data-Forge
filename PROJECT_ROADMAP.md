@@ -169,8 +169,10 @@ This document tracks the development progress of **Data Forge**. It serves as a 
 ## 13. 🕵️ Data Masking (Privacy & Compliance)
 *Goal: Protect sensitive data during demonstrations or debugging.*
 
-- [ ] **PII/PDPA Protection**
-    - [ ] On-the-fly masking or blurring of sensitive information (e.g., phone numbers, passwords, credit cards) in result grids
+- [x] **PII/PDPA Protection**
+    - [x] Auto-detect sensitive columns by name (email, phone, SSN, password, credit card, salary, etc.)
+    - [x] On-the-fly masking in result grids (default: ON, toggleable per-table)
+    - [x] Click-to-reveal per individual cell
 
 ---
 
