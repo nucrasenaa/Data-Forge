@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Database, Server, User, Globe, Loader2, ArrowLeft, Link, Database as DBIcon, CheckCircle2, AlertCircle, ShieldAlert, Palette, Lock } from 'lucide-react';
+import { Database, Server, User, Globe, Loader2, ArrowLeft, Link, Database as DBIcon, CheckCircle2, AlertCircle, ShieldAlert, Palette, Lock, Info } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -190,7 +190,7 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2 mb-1.5 opacity-60">
-                                Identifier
+                                Connection Name
                             </label>
                             <input
                                 type="text"
@@ -330,6 +330,7 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 px-1 py-1">
+                                    {/* Enable SSL/TLS */}
                                     <div className="flex items-center gap-2">
                                         <input
                                             type="checkbox"
@@ -342,9 +343,19 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
                                             })}
                                         />
                                         <label htmlFor="encrypt" className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider cursor-pointer select-none">
-                                            Enable SSL/TLS (Encrypt)
+                                            Enable SSL/TLS
                                         </label>
+                                        <div className="relative group/tip">
+                                            <Info className="w-3.5 h-3.5 text-muted-foreground/40 hover:text-accent transition-colors cursor-help" />
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-3 rounded-xl bg-card border border-border shadow-2xl text-[10px] text-muted-foreground leading-relaxed font-medium pointer-events-none opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-50 normal-case tracking-normal">
+                                                <p className="font-bold text-foreground mb-1">🔒 Enable SSL/TLS</p>
+                                                Encrypts all data sent between the app and the database server, protecting against eavesdropping (Man-in-the-middle attacks). Recommended to keep this ON.
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border" />
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    {/* Trust Server Certificate */}
                                     <div className="flex items-center gap-2">
                                         <input
                                             type="checkbox"
@@ -357,8 +368,16 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
                                             })}
                                         />
                                         <label htmlFor="trustCert" className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider cursor-pointer select-none">
-                                            Trust Server Certificate
+                                            Trust Certificate
                                         </label>
+                                        <div className="relative group/tip2">
+                                            <Info className="w-3.5 h-3.5 text-muted-foreground/40 hover:text-accent transition-colors cursor-help" />
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 p-3 rounded-xl bg-card border border-border shadow-2xl text-[10px] text-muted-foreground leading-relaxed font-medium pointer-events-none opacity-0 group-hover/tip2:opacity-100 transition-opacity duration-150 z-50 normal-case tracking-normal">
+                                                <p className="font-bold text-foreground mb-1">⚠️ Trust Server Certificate</p>
+                                                Accepts the server's SSL certificate even if it is not signed by a trusted CA. Use this for local or dev servers with self-signed certs. Not recommended for Production.
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border" />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -371,7 +390,7 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
                                         onChange={(e) => setConfig({ ...config, rememberPassword: e.target.checked })}
                                     />
                                     <label htmlFor="remember" className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider cursor-pointer select-none">
-                                        Securely Cache Credentials
+                                        Save login info
                                     </label>
                                 </div>
                             </>
@@ -402,7 +421,7 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
                                         onChange={(e) => setConfig({ ...config, rememberPassword: e.target.checked })}
                                     />
                                     <label htmlFor="remember-url" className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider cursor-pointer select-none">
-                                        Securely Cache Credentials
+                                        Save login info
                                     </label>
                                 </div>
                             </>
@@ -429,7 +448,7 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
                             className="flex-1 bg-muted/50 hover:bg-muted border border-border/50 disabled:opacity-50 text-foreground font-black uppercase text-[10px] tracking-widest py-4 rounded-2xl transition-all flex items-center justify-center gap-2"
                         >
                             {testing ? <Loader2 className="w-4 h-4 animate-spin text-accent" /> : null}
-                            {testing ? 'Testing...' : 'Diagnostics'}
+                            {testing ? 'Testing...' : 'Test Connection'}
                         </button>
                         <button
                             type="submit"
@@ -437,7 +456,7 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
                             className="flex-[1.5] bg-accent hover:bg-accent/90 disabled:bg-accent/50 text-accent-foreground font-black uppercase text-[10px] tracking-[0.2em] py-4 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-accent/20"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin font-bold" /> : null}
-                            {loading ? 'Forging Connection...' : 'Establish Link'}
+                            {loading ? 'Connecting...' : 'Connect'}
                         </button>
                     </div>
                 </form>
