@@ -1,39 +1,48 @@
-# Data Forge v1.2.0
+# Data Forge v1.2.1
 
-**Data Forge** is an enterprise-grade, high-performance database management studio and AI-powered SQL editor built with **Next.js** and **Electron**. It provides a unified, multi-tabbed workspace for managing **SQL Server (MSSQL)**, **PostgreSQL**, **MySQL**, and **MariaDB** with a premium aesthetic that adapts to your environment.
+**Data Forge** is an enterprise-grade, high-performance database management studio and AI-powered SQL editor. Built with **Next.js** and **Electron**, it offers a sophisticated **"Nebula" aesthetic**—a premium, immersive interface with deep grays, restrained accents, and glassmorphism.
 
-Optimized for high-productivity database engineering, Data Forge combines traditional administration tools with modern AI capabilities, production safety features, and compliance tooling.
+Data Forge provides a unified, multi-tabbed workspace for **SQL Server (MSSQL)**, **PostgreSQL**, **MySQL**, and **MariaDB**, combining traditional administration power with modern AI intelligence and hardened security.
 
-<img src="public/icon.png" width="60" height="60" alt="App Icon" />
+<img src="public/icon.png" width="80" height="80" alt="App Icon" />
 
 ---
 
-## 🚀 What's New in v1.2.0
+## 🚀 What's New in v1.2.1
+
+### 🔐 Universal Data Encryption
+- **Hardened LocalStorage** — Implemented a unified encryption layer using Electron `safeStorage` (Desktop) and **Web Crypto AES-GCM** (Web).
+- **Sensitive Data Protection** — SQL Query History, Bookmarks, and AI API Keys are now encrypted at rest.
+- **Auto-Migration** — Seamlessly detects and migrates plain-text data from older versions to the new encrypted format.
+
+### ✨ UX & Workflow Refinements
+- **"Close All Tabs"** — Quickly clear your workspace with a new dedicated button (includes confirmation safety).
+- **Visual Query Builder 2.0** — Generated SQL now auto-executes, streamlining the "Design-to-Data" workflow.
+- **Premium Empty States** — Redesigned "No Data" views with glowing effects and refined typography.
+- **Smart Reset Controls** — Pagination controls now intelligently hide/show based on navigation state.
+
+### 🌌 Nebula Design System
+- **High-End Aesthetic** — A complete UI overhaul focusing on deep obsidian tones, subtle gradients, and a "developer-first" visual hierarchy.
+- **Micro-Animations** — Enhanced feedback for connections, tab switching, and query execution.
+
+---
+
+## 🚀 Previously in v1.2.0
 
 ### 🛡️ Production Safety & Environment Management
-- **Environment Color Coding** — Assign distinct colors (Red/Orange/Green/Purple/Default) to each connection, displayed as color bars, sidebar indicators, and connection card borders.
-- **Read-Only Mode** — Enforce `SELECT`-only guards per connection. Destructive queries (`UPDATE`, `DELETE`, `INSERT`, `DROP`, etc.) are blocked at the API level with a 403 response — bypass-proof even against SQL comment tricks.
-- **Safety Banner** — A prominent red banner appears at the top of the workspace whenever a Read-Only connection is active.
+- **Environment Color Coding** — Assign colors (Red/Orange/Green/Purple) to connections for visual safety.
+- **Read-Only Mode** — Enforce `SELECT`-only guards per connection. Destructive queries are blocked at the API level with comment-bypass protection.
+- **Safety Banner** — Persistent visual indicators when connected to sensitive or read-only environments.
 
-### 💅 SQL Linter & Formatter (Code Quality)
-- **Real-Time Linter** — Analyzes your SQL as you type (debounced 600ms) and surfaces 10 rule categories:
-  - `SELECT *` without column list (L001)
-  - `UPDATE` / `DELETE` without `WHERE` (L002, L003) — **Error** level
-  - Non-sargable `LIKE '%value'` leading wildcards (L004)
-  - Functions in `WHERE` clause preventing index use (L005)
-  - Non-standard `!=` instead of `<>` (L007)
-  - Missing aggregate aliases (L008)
-  - `ORDER BY` without `TOP`/`LIMIT` (L009)
-  - `WITH (NOLOCK)` dirty-read risks for MSSQL (L010)
-- **SQL Formatter** — One-click format via toolbar button or `Cmd+Shift+F` shortcut. Uppercases keywords, normalizes indentation, and structures major clauses.
-- **Collapsible Lint Panel** — Appears below the editor with error/warning/info counts. Click any issue to expand its fix suggestion. Click the badge to jump to the offending line.
+### 💅 SQL Linter & Formatter
+- **Real-Time Linter** — Analyzes SQL as you type with 10 best-practice rules (e.g., Missing WHERE, SELECT * risk).
+- **One-Click Formatter** — Professional SQL restructuring via `Cmd+Shift+F`.
+- **Collapsible Lint Panel** — Interactive issue tracker with "jump-to-line" badges.
 
 ### 🕵️ Data Masking (Privacy & Compliance)
-- **Auto-Detection** — Sensitive columns are identified by name pattern automatically: emails, phones, passwords, SSN, credit cards, IBAN, salary, API keys, addresses, and more (30+ patterns).
-- **Smart Masking** — Each column type gets a purpose-built mask: emails show `jo•••@domain`, phones show `•••-•••-5678`, cards show `•••• •••• •••• 1234`.
-- **Masking is ON by Default** — Table view starts with data protected. A 🔒 badge appears in masked column headers.
-- **Toggle per Table** — "Masked (N)" button in footer toggles all masking for the current result set.
-- **Click-to-Reveal** — Click any individual masked cell to reveal just that value without disabling global masking.
+- **Auto-Detection** — 30+ patterns identify PII (Emails, Phones, SSNs, CCs) automatically.
+- **Smart Masking** — Contextual masks (e.g., `jo•••@domain`) applied by default in result grids.
+- **Click-to-Reveal** — Securely peek at individual values without exposing the entire dataset.
 
 ### 🗑️ Bulk Row Deletion
 - **Checkbox Selection** — Select individual rows or all rows via the header checkbox.
@@ -47,7 +56,8 @@ Optimized for high-productivity database engineering, Data Forge combines tradit
 ### 🗂 Core Workspace & Connectivity
 - **Multi-Tab Workspace** — Query, Table, Designer, ER Diagram, Monitor, and Tool tabs in a single window.
 - **Tab Persistence** — Open tabs and queries are saved and restored per connection.
-- **Auto-Connect** — Securely cached credentials support one-click connection from the dashboard.
+- **"Close All Tabs"** — One-click cleanup of the workspace with confirmation safety.
+- **Auto-Connect** — One-click connection using "Save in System" credentials from the dashboard.
 - **Connection String Mode** — Paste full URIs (`postgresql://`, `mysql://`, etc.) without filling each field manually.
 - **Multi-Window / Pop-Out** — Pop any tab into an independent browser window.
 
@@ -88,6 +98,7 @@ Optimized for high-productivity database engineering, Data Forge combines tradit
 - **Mini Dashboards** — Save Bar / Line / Pie charts from result sets into a persistent dashboard board.
 
 ### 🛡️ Safety & Compliance
+- **Universal Encryption** — AES-GCM encryption for all sensitive data (History, Bookmarks, AI Keys).
 - **Environment Color Coding** — Visual connection environment tagging (Production/Staging/Dev/Analytics).
 - **Read-Only Mode** — Server-side enforcement of SELECT-only policy per connection.
 - **Data Masking** — Automatic PII/sensitive data masking in result grids with click-to-reveal.
@@ -138,10 +149,11 @@ Optimized for high-productivity database engineering, Data Forge combines tradit
 ## 🔒 Security & Architecture
 
 - **Native IPC Core** — Critical database and AI logic is executed in the Electron Main process via IPC handlers.
-- **Credential Safety** — Passwords can be optionally cached with encryption support.
-- **Context Isolation** — Hardened security using `contextBridge`.
+- **Universal Encryption Layer** — Sophisticated encryption using Electron `safeStorage` and Web Crypto (AES-GCM).
+- **Hardened Credential Safety** — Passwords and API keys are encrypted at rest with automatic migration.
+- **Context Isolation** — Hardened security using `contextBridge` to prevent renderer-to-main vulnerabilities.
 - **Read-Only Enforcement** — Backend API blocks destructive queries when Read-Only mode is enabled.
-- **Comment-Bypass Protection** — SQL comment stripping prevents clever workarounds to safety guards.
+- **Comment-Bypass Protection** — Advanced SQL comment stripping prevents bypass attempts.
 
 ---
 
