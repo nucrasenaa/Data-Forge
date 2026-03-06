@@ -25,6 +25,25 @@ export async function POST(req: NextRequest) {
         const actualQuery = query.trim();
         const isExplain = actualQuery.startsWith('EXPLAIN_PLAN:');
         const queryToExec = isExplain ? actualQuery.replace('EXPLAIN_PLAN:', '').trim() : actualQuery;
+
+        // --- SAFETY OVERRIDE ENFORCEMENT ---
+        if (config.readOnly) {
+            // Remove comments to prevent bypasses like `/* */ DELETE...`
+            const noCommentsQuery = queryToExec.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+            const statements = noCommentsQuery.split(';').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+
+            // Words that alter data or schema
+            const destructiveWords = /^(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|MERGE|GRANT|REVOKE|EXEC|EXECUTE)\b/i;
+
+            const hasDestructive = statements.some((stmt: string) => destructiveWords.test(stmt));
+            if (hasDestructive) {
+                return NextResponse.json(
+                    { success: false, message: 'SAFETY BLOCK: Connection is in Read-Only Mode. Data modification queries are forbidden.' },
+                    { status: 403 }
+                );
+            }
+        }
+
         const isSelect = queryToExec.toUpperCase().startsWith('SELECT');
 
         let finalQuery = queryToExec;

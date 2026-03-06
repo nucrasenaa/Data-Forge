@@ -26,7 +26,7 @@ import AISettings from '@/components/AISettings';
 import PerformanceAdvisor from '@/components/PerformanceAdvisor';
 import { saveToHistory } from '@/lib/history';
 import { popoutTab } from '@/lib/popout';
-import { Activity, Users, GitCompare, Settings } from 'lucide-react';
+import { Activity, Users, GitCompare, Settings, ShieldAlert, Lock, Palette } from 'lucide-react';
 
 interface ConnectionHistory {
   id: string;
@@ -35,11 +35,13 @@ interface ConnectionHistory {
   connectionString?: string;
   server: string;
   port: number;
-  user: string;
+  user?: string;
   password?: string;
   database: string;
   lastUsed: number;
   rememberPassword?: boolean;
+  envColor?: string;
+  readOnly?: boolean;
 }
 
 interface ResultSet {
@@ -255,7 +257,9 @@ export default function Home() {
       password: newConfig.rememberPassword ? newConfig.password : undefined,
       database: newConfig.database || '',
       lastUsed: Date.now(),
-      rememberPassword: newConfig.rememberPassword
+      rememberPassword: newConfig.rememberPassword,
+      envColor: newConfig.envColor || 'default',
+      readOnly: newConfig.readOnly || false,
     };
 
     const updatedHistory = [
@@ -890,72 +894,90 @@ export default function Home() {
             </button>
 
             {/* History Items */}
-            {history.map((conn) => (
-              <div
-                key={conn.id}
-                onClick={() => {
-                  if (conn.rememberPassword) {
-                    handleConnect(conn);
-                  } else {
-                    setInitialFormConfig(conn);
-                    setShowForm(true);
-                  }
-                }}
-                className="h-48 rounded-2xl border border-border bg-card/50 p-6 flex flex-col justify-between hover:border-accent hover:shadow-xl hover:shadow-accent/5 transition-all cursor-pointer group relative overflow-hidden"
-              >
-                <div className="absolute top-0 left-0 w-1 h-full bg-accent opacity-0 group-hover:opacity-100 transition-all" />
+            {history.map((conn) => {
+              const colorClass = conn.envColor === 'red' ? 'bg-red-500 text-red-500 border-red-500/50 shadow-red-500/10' :
+                conn.envColor === 'green' ? 'bg-emerald-500 text-emerald-500 border-emerald-500/50 shadow-emerald-500/10' :
+                  conn.envColor === 'orange' ? 'bg-orange-500 text-orange-500 border-orange-500/50 shadow-orange-500/10' :
+                    conn.envColor === 'purple' ? 'bg-purple-500 text-purple-500 border-purple-500/50 shadow-purple-500/10' :
+                      'bg-accent text-accent border-border shadow-accent/5';
 
-                <div className="flex justify-between items-start">
-                  <div className="p-3 bg-muted rounded-xl text-muted-foreground group-hover:text-accent group-hover:bg-accent/10 transition-colors">
-                    <Server className="w-6 h-6" />
-                  </div>
-                  <div className="flex gap-1 items-center">
-                    {conn.connectionString && (
-                      <div className="p-1.5 bg-accent/10 text-accent rounded-full" title="URL Mode">
-                        <LinkIcon className="w-3 h-3" />
+              return (
+                <div
+                  key={conn.id}
+                  onClick={() => {
+                    if (conn.rememberPassword) {
+                      handleConnect(conn);
+                    } else {
+                      setInitialFormConfig(conn);
+                      setShowForm(true);
+                    }
+                  }}
+                  className={cn(
+                    "h-48 rounded-2xl border bg-card/50 p-6 flex flex-col justify-between hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden",
+                    conn.envColor !== 'default' && conn.envColor ? colorClass.split(' ')[2] + ' hover:' + colorClass.split(' ')[3] : "border-border hover:border-accent hover:shadow-accent/5"
+                  )}
+                >
+                  <div className={cn("absolute top-0 left-0 w-1.5 h-full opacity-0 group-hover:opacity-100 transition-all", colorClass.split(' ')[0])} />
+
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-2 items-center">
+                      <div className={cn("p-3 rounded-xl transition-colors", conn.envColor !== 'default' && conn.envColor ? colorClass.split(' ')[0] + '/10 ' + colorClass.split(' ')[1] : "bg-muted text-muted-foreground group-hover:text-accent group-hover:bg-accent/10")}>
+                        <Server className="w-6 h-6" />
                       </div>
-                    )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setInitialFormConfig(conn);
-                        setShowForm(true);
-                      }}
-                      className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                      title="Edit Connection"
-                    >
-                      <Settings className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => removeFromHistory(conn.id, e)}
-                      className="p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      {conn.readOnly && (
+                        <div className="px-2 py-1 bg-red-500/10 text-red-500 rounded-lg flex items-center gap-1 border border-red-500/20" title="Read-Only Connection">
+                          <ShieldAlert className="w-3 h-3" />
+                          <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">Safe</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-1 items-center">
+                      {conn.connectionString && (
+                        <div className="p-1.5 bg-accent/10 text-accent rounded-full" title="URL Mode">
+                          <LinkIcon className="w-3 h-3" />
+                        </div>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setInitialFormConfig(conn);
+                          setShowForm(true);
+                        }}
+                        className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        title="Edit Connection"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => removeFromHistory(conn.id, e)}
+                        className="p-2 hover:bg-red-500/10 text-muted-foreground hover:text-red-500 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-1">
-                  <h3 className="font-bold text-lg truncate group-hover:text-accent transition-colors flex items-center gap-2">
-                    {conn.name || (conn.connectionString ? 'DB URL' : conn.server)}
-                    {!conn.name && !conn.connectionString && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground/50 font-normal">Host</span>}
-                  </h3>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-                    <Globe className="w-3 h-3" />
-                    {conn.database || 'Metadata URL'}
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-lg truncate group-hover:text-accent transition-colors flex items-center gap-2">
+                      {conn.name || (conn.connectionString ? 'DB URL' : conn.server)}
+                      {!conn.name && !conn.connectionString && <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground/50 font-normal">Host</span>}
+                    </h3>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                      <Globe className="w-3 h-3" />
+                      {conn.database || 'Metadata URL'}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground/60 font-mono">
+                      <User className="w-3 h-3" />
+                      {conn.dbType?.toUpperCase() || 'MSSQL'} • {conn.user || 'Link'}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground/60 font-mono">
-                    <User className="w-3 h-3" />
-                    {conn.dbType?.toUpperCase() || 'MSSQL'} • {conn.user || 'Link'}
-                  </div>
-                </div>
 
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-bold mt-2">
-                  {new Date(conn.lastUsed).toLocaleDateString()}
-                </div>
-              </div >
-            ))
-            }
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-bold mt-2">
+                    {new Date(conn.lastUsed).toLocaleDateString()}
+                  </div>
+                </div >
+              );
+            })}
           </div >
 
           <p className="text-center text-xs text-muted-foreground/40 font-mono uppercase tracking-[0.2em]">
@@ -1087,6 +1109,12 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
+            {config.readOnly && (
+              <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500">
+                <ShieldAlert className="w-3.5 h-3.5" />
+                <span className="text-[9px] font-black uppercase tracking-widest">Read-Only</span>
+              </div>
+            )}
             <div className="hidden md:flex flex-col items-end opacity-40">
               <span className="text-[10px] font-black tracking-[0.2em] uppercase leading-none">Access Control</span>
               <span className="text-[9px] font-mono font-bold text-emerald-500">ENCRYPTED LINK</span>
@@ -1099,6 +1127,28 @@ export default function Home() {
             </button>
           </div>
         </header>
+
+        {/* Environment Color Bar */}
+        {config.envColor && config.envColor !== 'default' && (
+          <div className={cn(
+            "h-1 w-full shrink-0",
+            config.envColor === 'red' ? 'bg-red-500' :
+              config.envColor === 'green' ? 'bg-emerald-500' :
+                config.envColor === 'orange' ? 'bg-orange-500' :
+                  config.envColor === 'purple' ? 'bg-purple-500' :
+                    'bg-accent'
+          )} />
+        )}
+
+        {/* Read-Only Safety Banner */}
+        {config.readOnly && (
+          <div className="bg-red-500/10 border-b border-red-500/20 px-6 py-2 flex items-center gap-3 shrink-0 animate-in slide-in-from-top-1">
+            <ShieldAlert className="w-4 h-4 text-red-500 shrink-0" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-red-500 flex-1">
+              🔒 Read-Only Mode — Modifications (UPDATE, DELETE, INSERT, DROP) are blocked on this connection.
+            </p>
+          </div>
+        )}
 
         {/* Workspace */}
         <main className="flex-1 overflow-hidden relative flex flex-col min-h-0">

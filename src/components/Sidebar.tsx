@@ -28,7 +28,9 @@ import {
     GitCompare,
     Sparkles,
     Book,
-    TestTubes
+    TestTubes,
+    ShieldAlert,
+    Lock
 } from 'lucide-react';
 import HistoryPanel from './HistoryPanel';
 import BookmarkPanel from './BookmarkPanel';
@@ -514,10 +516,23 @@ export default function Sidebar({
                 </div>
             )}
 
-            <div className="p-3 border-t border-border bg-muted/20">
+            <div className="p-3 border-t border-border bg-muted/20 space-y-1.5">
+                {config.readOnly && (
+                    <div className="flex items-center gap-2 px-1.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20">
+                        <ShieldAlert className="w-3 h-3 text-red-500 shrink-0" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-red-500">Read-Only Mode Active</span>
+                    </div>
+                )}
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono truncate">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    Connected: {config.server}
+                    <div className={cn(
+                        "w-2 h-2 rounded-full animate-pulse",
+                        config.envColor === 'red' ? 'bg-red-500' :
+                            config.envColor === 'green' ? 'bg-emerald-500' :
+                                config.envColor === 'orange' ? 'bg-orange-500' :
+                                    config.envColor === 'purple' ? 'bg-purple-500' :
+                                        'bg-green-500'
+                    )} />
+                    <span className="truncate">Connected: {config.server}</span>
                 </div>
             </div>
         </div>

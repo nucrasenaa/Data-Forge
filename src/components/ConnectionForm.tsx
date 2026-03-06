@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Database, Server, User, Globe, Loader2, ArrowLeft, Link, Database as DBIcon, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Database, Server, User, Globe, Loader2, ArrowLeft, Link, Database as DBIcon, CheckCircle2, AlertCircle, ShieldAlert, Palette, Lock } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -22,12 +22,22 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
         user: 'sa',
         password: '',
         database: 'master',
+        envColor: 'default',
+        readOnly: false,
         rememberPassword: false,
         options: {
             trustServerCertificate: true,
             encrypt: false,
         }
     });
+
+    const ENV_COLORS = [
+        { id: 'default', hex: 'bg-accent', label: 'Default' },
+        { id: 'green', hex: 'bg-emerald-500', label: 'Development/Local' },
+        { id: 'orange', hex: 'bg-orange-500', label: 'Staging/Test' },
+        { id: 'red', hex: 'bg-red-500', label: 'Production (Critical)' },
+        { id: 'purple', hex: 'bg-purple-500', label: 'Analytics/Replica' },
+    ];
 
     useEffect(() => {
         if (initialConfig) {
@@ -189,6 +199,62 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
                                 value={config.name}
                                 onChange={(e) => setConfig({ ...config, name: e.target.value })}
                             />
+                        </div>
+
+                        {/* Environment & Safety */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2 mb-1.5 opacity-60">
+                                    <Palette className="w-3.5 h-3.5" /> Environment Color
+                                </label>
+                                <div className="flex bg-muted/50 p-2 rounded-2xl border border-border/50 gap-2 overflow-x-auto custom-scrollbar">
+                                    {ENV_COLORS.map(color => (
+                                        <button
+                                            key={color.id}
+                                            type="button"
+                                            title={color.label}
+                                            onClick={() => setConfig({ ...config, envColor: color.id })}
+                                            className={cn(
+                                                "w-8 h-8 rounded-xl shrink-0 transition-all flex items-center justify-center border-2",
+                                                color.hex,
+                                                config.envColor === color.id
+                                                    ? "border-foreground ring-2 ring-background ring-offset-2 scale-110 shadow-lg"
+                                                    : "border-transparent opacity-50 hover:opacity-100 hover:scale-105"
+                                            )}
+                                        >
+                                            {config.envColor === color.id && <CheckCircle2 className="w-4 h-4 text-white" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2 mb-1.5 opacity-60">
+                                    <ShieldAlert className="w-3.5 h-3.5" /> Safety Override
+                                </label>
+                                <button
+                                    type="button"
+                                    onClick={() => setConfig({ ...config, readOnly: !config.readOnly })}
+                                    className={cn(
+                                        "w-full flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all text-left",
+                                        config.readOnly
+                                            ? "bg-red-500/10 border-red-500/30 text-red-500"
+                                            : "bg-muted/50 border-border/50 text-muted-foreground hover:bg-muted"
+                                    )}
+                                >
+                                    <div className={cn("p-1.5 rounded-lg", config.readOnly ? "bg-red-500/20" : "bg-background")}>
+                                        {config.readOnly ? <Lock className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">
+                                            {config.readOnly ? "Read-Only Mode On" : "Read-Only Mode Off"}
+                                        </div>
+                                        <div className="text-[9px] opacity-70">
+                                            {config.readOnly ? "Blocks UPDATE, DELETE, INSERT queries" : "Full access to modify database"}
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
 
                         {connMode === 'manual' ? (
