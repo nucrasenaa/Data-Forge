@@ -671,6 +671,90 @@ export default function Home() {
     }
   };
 
+  const handleDeleteRows = async (rows: any[]) => {
+    if (!activeTab || activeTab.type !== 'table') return;
+
+    if (!confirm(`Are you sure you want to drop ${rows.length} selected row(s)?\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    updateTab(activeTab.id, { loading: true });
+
+    const dialect = config.dbType || 'mssql';
+    const qStart = dialect === 'mssql' ? '[' : (dialect === 'postgres' ? '"' : '`');
+    const qEnd = dialect === 'mssql' ? ']' : (dialect === 'postgres' ? '"' : '`');
+
+    // Determine the fully qualified table name. For MSSQL it's usually [db].[schema].[table], 
+    // but activeTab.title is typically [schema].[table] already.
+    let fullTableName = activeTab.title;
+    if (dialect === 'mssql') {
+      fullTableName = `[${activeTab.database}].${activeTab.title}`;
+    } else if (dialect === 'mysql' || dialect === 'mariadb') {
+      fullTableName = `\`${activeTab.database}\`.\`${activeTab.title.split('.').pop()}\``;
+    }
+
+    try {
+      const pkCols = activeTab.queryResult.columns.filter(c => ['id', 'uuid', 'Id', 'ID', 'uid'].includes(c));
+      const hasPk = pkCols.length > 0;
+
+      const queries = rows.map(row => {
+        const colsToMatch = hasPk ? [pkCols[0]] : activeTab.queryResult.columns;
+        const conditions = colsToMatch.map(col => {
+          const val = row[col];
+          const colNameEscaped = `${qStart}${col}${qEnd}`;
+
+          if (val === null) return `${colNameEscaped} IS NULL`;
+          if (typeof val === 'number') return `${colNameEscaped} = ${val}`;
+          if (typeof val === 'boolean') {
+            if (dialect === 'postgres') return `${colNameEscaped} = ${val}`;
+            return `${colNameEscaped} = ${val ? 1 : 0}`;
+          }
+
+          const strVal = String(val);
+          const isISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(strVal);
+
+          if (isISO && !hasPk) {
+            const cleanedStr = strVal.substring(0, 19).replace('T', ' '); // 'YYYY-MM-DD HH:MM:SS'
+            if (dialect === 'mssql') return `CONVERT(VARCHAR(19), ${colNameEscaped}, 120) = '${cleanedStr}'`;
+            if (dialect === 'postgres') return `TO_CHAR(${colNameEscaped}, 'YYYY-MM-DD HH24:MI:SS') = '${cleanedStr}'`;
+            return `CAST(${colNameEscaped} AS CHAR(19)) = '${cleanedStr}'`;
+          }
+
+          const escapedStr = strVal.replace(/'/g, "''");
+          return `${colNameEscaped} = '${escapedStr}'`;
+        }).join(' AND ');
+
+        if (dialect === 'mssql' && !hasPk) {
+          return `DELETE TOP (1) FROM ${fullTableName} WHERE ${conditions};`;
+        } else if (!hasPk) {
+          if (dialect === 'postgres') return `DELETE FROM ${fullTableName} WHERE ctid IN (SELECT ctid FROM ${fullTableName} WHERE ${conditions} LIMIT 1);`;
+          return `DELETE FROM ${fullTableName} WHERE ${conditions} LIMIT 1;`;
+        }
+
+        return `DELETE FROM ${fullTableName} WHERE ${conditions};`;
+      });
+
+      const sql = queries.join('\n');
+
+      const res = await apiRequest('/api/db/query', 'POST', {
+        config: { ...config, database: activeTab.database },
+        query: sql
+      });
+
+      if (res.success) {
+        // Refresh data
+        executeQuery(activeTab.sqlQuery, { tabId: activeTab.id, db: activeTab.database, p: activeTab.page });
+      } else {
+        alert('Failed to drop rows: ' + res.message);
+        updateTab(activeTab.id, { loading: false });
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert('Error dropping rows: ' + e.message);
+      updateTab(activeTab.id, { loading: false });
+    }
+  };
+
   const handlePageChange = (newPage: number) => {
     if (activeTab) {
       executeQuery(activeTab.sqlQuery, { p: newPage });
@@ -1317,6 +1401,7 @@ export default function Home() {
                         sortDir={activeTab.sortDir}
                         onUpdate={handleUpdate}
                         allowEdit={true}
+                        onDeleteRows={handleDeleteRows}
                       />
                     )}
                   </div>

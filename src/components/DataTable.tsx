@@ -18,7 +18,8 @@ import {
     Database as DatabaseIcon,
     ChevronDown,
     Share2,
-    Table as TableIcon
+    Table as TableIcon,
+    Trash2
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ interface DataTableProps {
     sortDir?: 'ASC' | 'DESC';
     onUpdate?: (rowIndex: number, column: string, newValue: any, originalRow: any) => Promise<boolean>;
     allowEdit?: boolean;
+    onDeleteRows?: (rows: any[]) => void;
 }
 
 export default function DataTable({
@@ -53,14 +55,21 @@ export default function DataTable({
     sortColumn,
     sortDir,
     onUpdate,
-    allowEdit
+    allowEdit,
+    onDeleteRows
 }: DataTableProps) {
     const [editingCell, setEditingCell] = useState<{ rowIndex: number, col: string } | null>(null);
     const [editValue, setEditValue] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
     const [showExport, setShowExport] = useState(false);
+    const [selectedRows, setSelectedRows] = useState<number[]>([]);
+
     const inputRef = useRef<HTMLInputElement>(null);
     const exportRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        setSelectedRows([]);
+    }, [data, page]);
 
     // Close export dropdown when clicking outside
     useEffect(() => {
@@ -118,6 +127,22 @@ export default function DataTable({
         a.href = URL.createObjectURL(file);
         a.download = fileName;
         a.click();
+    };
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked && data.length > 0) {
+            setSelectedRows(data.map((_, i) => i));
+        } else {
+            setSelectedRows([]);
+        }
+    };
+
+    const handleSelectRow = (i: number, checked: boolean) => {
+        if (checked) {
+            setSelectedRows(prev => [...prev, i]);
+        } else {
+            setSelectedRows(prev => prev.filter(index => index !== i));
+        }
     };
 
     const exportToCSV = () => {
@@ -204,8 +229,18 @@ export default function DataTable({
                 <table className="w-full min-w-max text-sm text-left border-collapse table-auto">
                     <thead className="sticky top-0 bg-muted/95 backdrop-blur-md z-30 border-b border-border shadow-sm">
                         <tr>
-                            <th className="w-12 px-4 py-3 font-semibold text-muted-foreground uppercase tracking-wider text-[10px] whitespace-nowrap border-r border-border/50 bg-muted/50">
-                                #
+                            <th className="w-16 px-4 py-3 font-semibold text-muted-foreground uppercase tracking-wider text-[10px] whitespace-nowrap border-r border-border/50 bg-muted/50">
+                                <div className="flex items-center gap-2">
+                                    {onDeleteRows && (
+                                        <input
+                                            type="checkbox"
+                                            className="w-3.5 h-3.5 rounded border-border bg-muted/50 text-red-500 focus:ring-1 focus:ring-red-500/50 focus:ring-offset-0 cursor-pointer"
+                                            checked={data.length > 0 && selectedRows.length === data.length}
+                                            onChange={handleSelectAll}
+                                        />
+                                    )}
+                                    <span>#</span>
+                                </div>
                             </th>
                             {columns.map((col) => (
                                 <th
@@ -230,8 +265,18 @@ export default function DataTable({
                     <tbody className="divide-y divide-border/50">
                         {data.map((row, i) => (
                             <tr key={i} className="hover:bg-muted/30 transition-colors group/row">
-                                <td className="px-4 py-2 font-mono text-[10px] text-muted-foreground/60 border-r border-border/10 text-center bg-muted/5">
-                                    {(page - 1) * pageSize + i + 1}
+                                <td className="w-16 px-4 py-2 font-mono text-[10px] text-muted-foreground/60 border-r border-border/10 text-center bg-muted/5">
+                                    <div className="flex items-center gap-2">
+                                        {onDeleteRows && (
+                                            <input
+                                                type="checkbox"
+                                                className="w-3.5 h-3.5 rounded border-border bg-muted/50 text-red-500 focus:ring-1 focus:ring-red-500/50 focus:ring-offset-0 cursor-pointer"
+                                                checked={selectedRows.includes(i)}
+                                                onChange={(e) => handleSelectRow(i, e.target.checked)}
+                                            />
+                                        )}
+                                        <span>{(page - 1) * pageSize + i + 1}</span>
+                                    </div>
                                 </td>
                                 {columns.map((col) => {
                                     const isEditing = editingCell?.rowIndex === i && editingCell?.col === col;
@@ -318,6 +363,14 @@ export default function DataTable({
                                 </div>
                             )}
                         </div>
+                        {onDeleteRows && selectedRows.length > 0 && (
+                            <button
+                                onClick={() => onDeleteRows(selectedRows.map(i => data[i]))}
+                                className="flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/20 md:ml-2 animate-in fade-in"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" /> Drop ({selectedRows.length})
+                            </button>
+                        )}
                         <div className="md:hidden flex items-center gap-2">
                             <span className="text-[10px] font-black text-muted-foreground uppercase opacity-40 whitespace-nowrap">Row {data.length} / {totalRows || '?'}</span>
                         </div>
