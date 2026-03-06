@@ -20,5 +20,9 @@ contextBridge.exposeInMainWorld('electron', {
     },
     window: {
         open: (args) => ipcRenderer.invoke('window:open', args)
+    },
+    crypto: {
+        encrypt: (text) => ipcRenderer.invoke('crypto:encrypt', text),
+        decrypt: (text) => ipcRenderer.invoke('crypto:decrypt', text)
     }
 });

@@ -10,7 +10,7 @@ import MiniDashboards from '@/components/MiniDashboards';
 import MockDataGenerator from '@/components/MockDataGenerator';
 import { Database, LogOut, Table as TableIcon, LayoutDashboard, Terminal, Search, Filter, X, Plus, Server, Trash2, Globe, User, Link as LinkIcon, Maximize2, Github, PlusCircle, Layers, Zap, RotateCcw, Share2, Sparkles, AlertCircle, Menu, Sun, Moon, Book, PieChart, Network } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn, encryptValue, decryptValue } from '@/lib/utils';
 import { apiRequest } from '@/lib/api';
 import TableDesigner from '@/components/TableDesigner';
 import ImportWizard from '@/components/ImportWizard';
@@ -199,7 +199,16 @@ export default function Home() {
     const savedHistory = localStorage.getItem('db_history');
     if (savedHistory) {
       try {
-        setHistory(JSON.parse(savedHistory));
+        const parsed = JSON.parse(savedHistory);
+        // Decrypt passwords if present
+        const loadHistory = async () => {
+          const decrypted = await Promise.all(parsed.map(async (item: any) => ({
+            ...item,
+            password: item.password ? await decryptValue(item.password) : undefined
+          })));
+          setHistory(decrypted);
+        };
+        loadHistory();
       } catch (e) {
         setHistory([]);
       }
@@ -238,13 +247,16 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [config, activeTabId, activeTab]);
 
-  const handleConnect = (newConfig: any) => {
+  const handleConnect = async (newConfig: any) => {
     setConfig(newConfig);
 
     // Manage history
     const connectionId = newConfig.connectionString
       ? `url-${newConfig.connectionString}`
       : `${newConfig.server}:${newConfig.port}-${newConfig.user}-${newConfig.database}`;
+
+    // Encrypt password if rememberPassword is true
+    const savedPassword = newConfig.rememberPassword ? await encryptValue(newConfig.password) : undefined;
 
     const newHistoryItem: ConnectionHistory = {
       id: connectionId,
@@ -254,7 +266,7 @@ export default function Home() {
       server: newConfig.server || '',
       port: newConfig.port || 1433,
       user: newConfig.user || '',
-      password: newConfig.rememberPassword ? newConfig.password : undefined,
+      password: savedPassword,
       database: newConfig.database || '',
       lastUsed: Date.now(),
       rememberPassword: newConfig.rememberPassword,
@@ -264,11 +276,35 @@ export default function Home() {
 
     const updatedHistory = [
       newHistoryItem,
-      ...history.filter(item => item.id !== connectionId)
-    ].slice(0, 12); // Keep last 12
+      ...history.map(h => ({
+        ...h,
+        // Since we are re-saving the history, we need the encrypted versions
+        // But history state already has decrypted ones. 
+        // Let's re-encrypt them for storage.
+      })),
+    ];
 
-    setHistory(updatedHistory);
-    localStorage.setItem('db_history', JSON.stringify(updatedHistory));
+    // Actually, it's simpler to just save the current new item and the rest of the history
+    // But we need to make sure history in localStorage is ALWAYS encrypted.
+    // Let's re-encrypt the entire history array for saving.
+
+    const historyToSave = await Promise.all([
+      newHistoryItem,
+      ...history.filter(item => item.id !== connectionId)
+    ].slice(0, 12).map(async (item) => ({
+      ...item,
+      // Ensure password is encrypted. If it's the new item, it already is.
+      // If it's an old item, we need to handle it.
+      // However, the `history` state now holds DECRYPTED passwords.
+      password: (item.id === connectionId) ? item.password : await encryptValue(item.password)
+    })));
+
+    setHistory([
+      { ...newHistoryItem, password: newConfig.rememberPassword ? newConfig.password : undefined },
+      ...history.filter(item => item.id !== connectionId)
+    ].slice(0, 12));
+
+    localStorage.setItem('db_history', JSON.stringify(historyToSave));
     setShowForm(false);
   };
 

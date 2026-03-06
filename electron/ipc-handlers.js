@@ -1,12 +1,38 @@
-const { ipcMain, BrowserWindow, screen, app } = require('electron');
+const { ipcMain, BrowserWindow, screen, app, safeStorage } = require('electron');
 const { getDbProxy } = require('./db');
 
 const isDev = !app.isPackaged;
 
 function setupIpcHandlers() {
+    // --- SAFE STORAGE HANDLERS ---
+    ipcMain.handle('crypto:encrypt', async (event, text) => {
+        try {
+            if (!safeStorage.isEncryptionAvailable()) return text;
+            const buffer = safeStorage.encryptString(text);
+            return buffer.toString('base64');
+        } catch (e) {
+            return text;
+        }
+    });
+
+    ipcMain.handle('crypto:decrypt', async (event, encryptedBase64) => {
+        try {
+            if (!safeStorage.isEncryptionAvailable()) return encryptedBase64;
+            const buffer = Buffer.from(encryptedBase64, 'base64');
+            return safeStorage.decryptString(buffer);
+        } catch (e) {
+            return encryptedBase64;
+        }
+    });
+
     // 0. Open new window (Multi-Window Support)
     ipcMain.handle('window:open', async (event, { url, title, width = 1200, height = 800 }) => {
         try {
+            // Security Check: Ensure URL is internal
+            if (url && !url.startsWith('/') && !url.startsWith('http://localhost') && !url.startsWith('app://')) {
+                throw new Error('Unauthorized window URL');
+            }
+
             const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize;
             const win = new BrowserWindow({
                 width: Math.min(width, sw),
@@ -29,6 +55,7 @@ function setupIpcHandlers() {
             win.once('ready-to-show', () => win.show());
             return { success: true };
         } catch (err) {
+            console.error('[IPC] window:open error:', err.message);
             return { success: false, message: err.message };
         }
     });
@@ -57,6 +84,14 @@ function setupIpcHandlers() {
 
             let finalQuery = queryToExec;
             let totalRows = 0;
+
+            // --- SANITIZE ORDER BY ---
+            let sanitizedOrderBy = null;
+            if (orderBy) {
+                // Allow only alphanumeric, underscores, dots and square brackets (for MSSQL)
+                sanitizedOrderBy = orderBy.replace(/[^a-zA-Z0-9_.[\]]/g, '');
+            }
+            const sanitizedOrderDir = (orderDir === 'DESC' || orderDir === 'desc') ? 'DESC' : 'ASC';
 
             const dbProxy = await getDbProxy(config);
             try {
@@ -115,12 +150,12 @@ function setupIpcHandlers() {
                         // Check if query already has an ORDER BY clause at the end
                         const hasOrderBy = /\s+ORDER\s+BY\s+[\w\.\[\]\d\s,]+$/i.test(baseQuery);
 
-                        if (orderBy) {
+                        if (sanitizedOrderBy) {
                             let cleanedQuery = baseQuery;
                             if (hasOrderBy) {
                                 cleanedQuery = baseQuery.replace(/\s+ORDER\s+BY\s+[\w\.\[\]\d\s,]+$/i, '').trim();
                             }
-                            finalQuery = `${cleanedQuery} ORDER BY ${orderBy} ${orderDir} OFFSET ${offset} ROWS FETCH NEXT ${pageSize} ROWS ONLY`;
+                            finalQuery = `${cleanedQuery} ORDER BY ${sanitizedOrderBy} ${sanitizedOrderDir} OFFSET ${offset} ROWS FETCH NEXT ${pageSize} ROWS ONLY`;
                         } else if (hasOrderBy) {
                             finalQuery = `${baseQuery} OFFSET ${offset} ROWS FETCH NEXT ${pageSize} ROWS ONLY`;
                         } else {
@@ -129,10 +164,10 @@ function setupIpcHandlers() {
                     } else {
                         const hasOrderBy = /\s+ORDER\s+BY\s+[\w\.\[\]\d\s,]+$/i.test(baseQuery);
                         let cleanedQuery = baseQuery;
-                        if (orderBy && hasOrderBy) {
+                        if (sanitizedOrderBy && hasOrderBy) {
                             cleanedQuery = baseQuery.replace(/\s+ORDER\s+BY\s+[\w\.\[\]\d\s,]+$/i, '').trim();
                         }
-                        const sortClause = orderBy ? `ORDER BY ${orderBy} ${orderDir}` : '';
+                        const sortClause = sanitizedOrderBy ? `ORDER BY ${sanitizedOrderBy} ${sanitizedOrderDir}` : '';
                         finalQuery = `${cleanedQuery} ${sortClause} LIMIT ${pageSize} OFFSET ${offset}`;
                     }
                 }
@@ -257,22 +292,28 @@ function setupIpcHandlers() {
             const qStart = dialect === 'mssql' ? '[' : (dialect === 'postgres' ? '"' : '`');
             const qEnd = dialect === 'mssql' ? ']' : (dialect === 'postgres' ? '"' : '`');
 
+            const sanitizeIdentifier = (name) => name.replace(/[^a-zA-Z0-9_.[\]`"]/g, '');
+            const safeTable = sanitizeIdentifier(table);
+            const safeDatabase = sanitizeIdentifier(targetDb);
+
             const setClause = Object.entries(updates)
                 .map(([col, val]) => {
+                    const safeCol = sanitizeIdentifier(col);
                     const formattedVal = val === null ? 'NULL' : (typeof val === 'string' ? `'${val.replace(/'/g, dialect === 'mssql' ? "''" : (dialect === 'postgres' ? "''" : "\\'"))}'` : val);
-                    return `${qStart}${col}${qEnd} = ${formattedVal}`;
+                    return `${qStart}${safeCol}${qEnd} = ${formattedVal}`;
                 }).join(', ');
 
             const whereClause = Object.entries(where)
                 .map(([col, val]) => {
-                    if (val === null) return `${qStart}${col}${qEnd} IS NULL`;
+                    const safeCol = sanitizeIdentifier(col);
+                    if (val === null) return `${qStart}${safeCol}${qEnd} IS NULL`;
                     const formattedVal = typeof val === 'string' ? `'${val.replace(/'/g, dialect === 'mssql' ? "''" : (dialect === 'postgres' ? "''" : "\\'"))}'` : val;
-                    return `${qStart}${col}${qEnd} = ${formattedVal}`;
+                    return `${qStart}${safeCol}${qEnd} = ${formattedVal}`;
                 }).join(' AND ');
 
             const sql = dialect === 'mssql'
-                ? `UPDATE [${targetDb}].${table} SET ${setClause} WHERE ${whereClause}`
-                : (dialect === 'postgres' ? `UPDATE "${table}" SET ${setClause} WHERE ${whereClause}` : `UPDATE \`${targetDb}\`. \`${table}\` SET ${setClause} WHERE ${whereClause}`);
+                ? `UPDATE [${safeDatabase}].${safeTable} SET ${setClause} WHERE ${whereClause}`
+                : (dialect === 'postgres' ? `UPDATE "${safeTable}" SET ${setClause} WHERE ${whereClause}` : `UPDATE \`${safeDatabase}\`. \`${safeTable}\` SET ${setClause} WHERE ${whereClause}`);
 
             const dbProxy = await getDbProxy(config);
             try {

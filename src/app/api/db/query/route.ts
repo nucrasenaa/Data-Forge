@@ -28,21 +28,35 @@ export async function POST(req: NextRequest) {
 
         // --- SAFETY OVERRIDE ENFORCEMENT ---
         if (config.readOnly) {
-            // Remove comments to prevent bypasses like `/* */ DELETE...`
-            const noCommentsQuery = queryToExec.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+            // Remove ALL comments (Line and Block) to prevent bypasses like `/* */ DELETE...`
+            const noCommentsQuery = queryToExec
+                .replace(/--.*$/gm, '')
+                .replace(/\/\*[\s\S]*?\*\//g, '')
+                .trim();
+
+            // Check if any statement starts with a destructive keyword
+            // We split by ';' but also check the start of the whole string after trimming
             const statements = noCommentsQuery.split(';').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
 
             // Words that alter data or schema
-            const destructiveWords = /^(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|MERGE|GRANT|REVOKE|EXEC|EXECUTE)\b/i;
+            const destructiveWords = /^(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|MERGE|GRANT|REVOKE|EXEC|EXECUTE|RENAME|COMMENT)\b/i;
 
             const hasDestructive = statements.some((stmt: string) => destructiveWords.test(stmt));
-            if (hasDestructive) {
+            if (hasDestructive || destructiveWords.test(noCommentsQuery)) {
                 return NextResponse.json(
                     { success: false, message: 'SAFETY BLOCK: Connection is in Read-Only Mode. Data modification queries are forbidden.' },
                     { status: 403 }
                 );
             }
         }
+
+        // --- SANITIZE ORDER BY ---
+        let sanitizedOrderBy = null;
+        if (orderBy) {
+            // Allow only alphanumeric, underscores, dots and square brackets (for MSSQL)
+            sanitizedOrderBy = String(orderBy).replace(/[^a-zA-Z0-9_.[\]]/g, '');
+        }
+        const sanitizedOrderDir = (orderDir === 'DESC' || orderDir === 'desc') ? 'DESC' : 'ASC';
 
         const isSelect = queryToExec.toUpperCase().startsWith('SELECT');
 
@@ -117,13 +131,13 @@ export async function POST(req: NextRequest) {
                     // This avoids double ORDER BY which is invalid in MSSQL
                     const hasOrderBy = /\s+ORDER\s+BY\s+[\w\.\[\]\d\s,]+$/i.test(baseQuery);
 
-                    if (orderBy) {
+                    if (sanitizedOrderBy) {
                         // If we have explicit sort params, strip any existing ORDER BY to avoid duplication
                         let cleanedQuery = baseQuery;
                         if (hasOrderBy) {
                             cleanedQuery = baseQuery.replace(/\s+ORDER\s+BY\s+[\w\.\[\]\d\s,]+$/i, '').trim();
                         }
-                        finalQuery = `${cleanedQuery} ORDER BY ${orderBy} ${orderDir} OFFSET ${offset} ROWS FETCH NEXT ${pageSize} ROWS ONLY`;
+                        finalQuery = `${cleanedQuery} ORDER BY ${sanitizedOrderBy} ${sanitizedOrderDir} OFFSET ${offset} ROWS FETCH NEXT ${pageSize} ROWS ONLY`;
                     } else if (hasOrderBy) {
                         // Use existing ORDER BY if present
                         finalQuery = `${baseQuery} OFFSET ${offset} ROWS FETCH NEXT ${pageSize} ROWS ONLY`;
@@ -134,10 +148,10 @@ export async function POST(req: NextRequest) {
                 } else {
                     const hasOrderBy = /\s+ORDER\s+BY\s+[\w\.\[\]\d\s,]+$/i.test(baseQuery);
                     let cleanedQuery = baseQuery;
-                    if (orderBy && hasOrderBy) {
+                    if (sanitizedOrderBy && hasOrderBy) {
                         cleanedQuery = baseQuery.replace(/\s+ORDER\s+BY\s+[\w\.\[\]\d\s,]+$/i, '').trim();
                     }
-                    const sortClause = orderBy ? `ORDER BY ${orderBy} ${orderDir}` : '';
+                    const sortClause = sanitizedOrderBy ? `ORDER BY ${sanitizedOrderBy} ${sanitizedOrderDir}` : '';
                     finalQuery = `${cleanedQuery} ${sortClause} LIMIT ${pageSize} OFFSET ${offset}`;
                 }
             }

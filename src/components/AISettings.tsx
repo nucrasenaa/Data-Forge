@@ -22,7 +22,7 @@ import {
     X
 } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, encryptValue, decryptValue } from '@/lib/utils';
 
 interface AISettingsProps {
     onClose: () => void;
@@ -81,19 +81,28 @@ export default function AISettings({ onClose }: AISettingsProps) {
         const saved = localStorage.getItem('ai_config');
         if (saved) {
             try {
-                setConfig(JSON.parse(saved));
+                const parsed = JSON.parse(saved);
+                const loadConfig = async () => {
+                    const decryptedApiKey = await decryptValue(parsed.apiKey);
+                    setConfig({ ...parsed, apiKey: decryptedApiKey || '' });
+                };
+                loadConfig();
             } catch (e) {
                 console.error('Failed to parse AI config', e);
             }
         }
     }, []);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setLoading(true);
-        localStorage.setItem('ai_config', JSON.stringify(config));
+        // Encrypt API key before saving
+        const encryptedApiKey = await encryptValue(config.apiKey);
+        const configToSave = { ...config, apiKey: encryptedApiKey };
+
+        localStorage.setItem('ai_config', JSON.stringify(configToSave));
+
         setTimeout(() => {
             setLoading(false);
-            // Show toast or feedback here
         }, 500);
     };
 
