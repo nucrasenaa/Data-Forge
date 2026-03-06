@@ -119,6 +119,59 @@ This document tracks the development progress of **Data Forge**. It serves as a 
     - [x] Multi-database selector for all designers (Implemented for Table, View, Proc Designers & Import Wizard)
     - [x] Cross-database schema intelligence (Table completion across selected DBs)
 
+## 7. 📊 Data Visualization & Dashboards (Data Insights)
+*Goal: Transform data into visual insights effortlessly.*
+
+- [ ] **Quick Charts**
+    - [ ] One-click generation of Bar, Line, and Pie charts from Result Sets
+- [ ] **Mini Dashboards**
+    - [ ] Save and arrange multiple charts for monitoring key metrics
+
+## 8. 🧪 Mock Data Generator (Testing Tools)
+*Goal: Easily generate dummy data for development and testing.*
+
+- [ ] **Smart Data Generation**
+    - [ ] Generate thousands of rows of dummy data based on column types (e.g., emails, names)
+    - [ ] Foreign Key awareness for generating valid relational data
+
+## 9. 🛡️ Environment Color Coding & Safety Measures (Production Safety)
+*Goal: Prevent accidental data modifications in critical environments.*
+
+- [ ] **Color-Coded Connections**
+    - [ ] Visual indicators (e.g., Red for Production, Green for Dev)
+- [ ] **Read-Only Mode**
+    - [ ] Enforce SELECT-only restrictions on specific connections to prevent UPDATE/DELETE
+
+## 10. 🗂️ Git / Version Control Integration (Schema Tracking)
+*Goal: Seamlessly track database schema changes.*
+
+- [ ] **Direct Repository Connection**
+    - [ ] Connect and sync with GitHub/GitLab repositories
+- [ ] **DDL Versioning**
+    - [ ] Commit and push changes to Procedures, Views, or Tables directly from the app
+
+## 11. 💅 Advanced SQL Linter & Formatter (Code Quality)
+*Goal: Enforce SQL best practices and maintain clean code.*
+
+- [ ] **Custom Formatter**
+    - [ ] Fine-grained formatting options (e.g., uppercase keywords, line breaks)
+- [ ] **Smart Linter**
+    - [ ] Real-time warnings for anti-patterns (e.g., `SELECT *` without specific columns, missing `WHERE` in `UPDATE`)
+
+## 12. 👥 Cloud Sync & Team Collaboration (Workspace Sharing)
+*Goal: Enable seamless transitions across devices and team sharing.*
+
+- [ ] **Cloud Synchronization**
+    - [ ] Securely sync encrypted Connection Strings, Bookmarks, and Query History across devices
+- [ ] **Team Workspaces**
+    - [ ] Share queries and snippets instantly with team members
+
+## 13. 🕵️ Data Masking (Privacy & Compliance)
+*Goal: Protect sensitive data during demonstrations or debugging.*
+
+- [ ] **PII/PDPA Protection**
+    - [ ] On-the-fly masking or blurring of sensitive information (e.g., phone numbers, passwords, credit cards) in result grids
+
 ---
 
 ## 📝 Notes for AI Agents
