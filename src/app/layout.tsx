@@ -29,13 +29,6 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Data Forge",
   },
-  icons: {
-    icon: [
-      { url: '/icons/icon-32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-    ],
-    apple: '/icons/icon-180.png',
-  },
   alternates: {
     canonical: "https://data-forge.threemandev.com",
   },
@@ -121,7 +114,6 @@ export default function RootLayout({
         <meta name="theme-color" content="#0d0d0f" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         {/* iOS Safari specific */}
-        <link rel="apple-touch-icon" href="/icons/icon-180.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Data Forge" />

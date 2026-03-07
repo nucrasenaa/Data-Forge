@@ -33,7 +33,7 @@ export default withPWA({
       urlPattern: /^\/_next\/static\/.*/i,
       handler: 'CacheFirst',
       options: {
-        cacheName: 'data-forge-next-static',
+        cacheName: 'data-forge-next-static-v2',
         expiration: {
           maxEntries: 200,
           maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
@@ -45,7 +45,7 @@ export default withPWA({
       urlPattern: /\.(?:png|jpg|jpeg|svg|gif|ico|webp)$/i,
       handler: 'CacheFirst',
       options: {
-        cacheName: 'data-forge-images',
+        cacheName: 'data-forge-images-v2',
         expiration: {
           maxEntries: 50,
           maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
