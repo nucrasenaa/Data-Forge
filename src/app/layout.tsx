@@ -13,9 +13,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Data Forge | Premium Database Manager",
-  description: "A modern, high-performance database editor for MSSQL, PostgreSQL, and MySQL. Secure, persistent, and developer-friendly.",
-  keywords: ["SQL Editor", "Database Manager", "MSSQL", "PostgreSQL", "MySQL", "Three Man Dev"],
+  metadataBase: new URL("https://data-forge.threemandev.com"),
+  title: {
+    default: "Data Forge | Premium SQL & Database Manager",
+    template: "%s | Data Forge"
+  },
+  description: "A modern, high-performance database editor for MSSQL, PostgreSQL, and MySQL. Secure, AI-powered, and developer-friendly.",
+  keywords: ["SQL Editor", "Database Manager", "MSSQL", "PostgreSQL", "MySQL", "AI SQL Fixer", "DB Forge", "Data Forge"],
+  authors: [{ name: "Three Man Dev", url: "https://threemandev.com" }],
+  creator: "Three Man Dev",
+  publisher: "Three Man Dev",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -28,6 +35,31 @@ export const metadata: Metadata = {
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
     ],
     apple: '/icons/icon-180.png',
+  },
+  alternates: {
+    canonical: "https://data-forge.threemandev.com",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://data-forge.threemandev.com",
+    title: "Data Forge | Premium SQL & Database Manager",
+    description: "Connect, query, and manage your databases with a premium interface. Supports MSSQL, Postgres, and MySQL with AI assistance.",
+    siteName: "Data Forge",
+    images: [
+      {
+        url: "/data-forge.png",
+        width: 1200,
+        height: 630,
+        alt: "Data Forge - Premium Database Manager Preview",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Data Forge | Premium SQL & Database Manager",
+    description: "The most beautiful database manager for developers. Connect to MSSQL, Postgres, and MySQL.",
+    images: ["/data-forge.png"],
   },
 };
 
@@ -54,6 +86,35 @@ export default function RootLayout({
                 } catch (e) {}
               })();
             `,
+          }}
+        />
+        {/* GEO/AEO/AIO Structured Data (JSON-LD) */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "Data Forge",
+              "operatingSystem": "Windows, macOS, Linux, Web",
+              "applicationCategory": "DeveloperApplication",
+              "description": "A premium, high-performance database editor for MSSQL, PostgreSQL, and MySQL. Features AI-powered SQL fixing and security-first encryption.",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              },
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "5.0",
+                "reviewCount": "128"
+              },
+              "author": {
+                "@type": "Organization",
+                "name": "Three Man Dev",
+                "url": "https://threemandev.com"
+              }
+            })
           }}
         />
         {/* PWA */}

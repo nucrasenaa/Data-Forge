@@ -927,11 +927,15 @@ export default function Home() {
         </div>
         <div className="w-full max-w-4xl space-y-12">
           <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-accent/10 mb-2">
-              <Database className="w-10 h-10 text-accent" />
+            <div className="inline-flex items-center justify-center w-28 h-28 rounded-[2.5rem] bg-accent/10 mb-4 animate-in zoom-in duration-700">
+              <Database className="w-14 h-14 text-accent" />
             </div>
-            <h1 className="text-4xl font-black tracking-tighter gradient-text uppercase">Database Explorer</h1>
-            <p className="text-muted-foreground text-lg">Select a recent connection or create a new one</p>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter gradient-text uppercase leading-none">Data Forge</h1>
+            <h2 className="text-lg md:text-xl font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-80">Premium SQL & Database Manager</h2>
+            <p className="text-muted-foreground/60 text-sm md:text-md max-w-md mx-auto font-medium">
+              The modern, high-performance editor for MSSQL, PostgreSQL, and MySQL.
+              Built for speed, security, and developer happiness.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
