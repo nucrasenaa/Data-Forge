@@ -59,7 +59,8 @@ export async function POST(req: NextRequest) {
         // Logic to prevent redundant naming (e.g., db.db.table)
         let sql = '';
         if (dialect === 'mssql') {
-            const tablePath = safeTable.includes('.') ? safeTable : `[${safeDatabase}].${safeTable}`;
+            // Ensure 3-part name for MSSQL: [database].[schema].[table]
+            const tablePath = safeTable.split('.').length < 3 ? `[${safeDatabase}].${safeTable}` : safeTable;
             sql = `UPDATE ${tablePath} SET ${setClause} WHERE ${whereClause}`;
         } else if (dialect === 'postgres') {
             sql = `UPDATE "${safeTable}" SET ${setClause} WHERE ${whereClause}`;

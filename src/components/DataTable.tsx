@@ -43,6 +43,7 @@ interface DataTableProps {
     onUpdate?: (rowIndex: number, column: string, newValue: any, originalRow: any) => Promise<boolean>;
     allowEdit?: boolean;
     onDeleteRows?: (rows: any[]) => void;
+    viewSwitcher?: React.ReactNode;
 }
 
 export default function DataTable({
@@ -59,7 +60,8 @@ export default function DataTable({
     sortDir,
     onUpdate,
     allowEdit,
-    onDeleteRows
+    onDeleteRows,
+    viewSwitcher
 }: DataTableProps) {
     const [editingCell, setEditingCell] = useState<{ rowIndex: number, col: string } | null>(null);
     const [editValue, setEditValue] = useState<string>('');
@@ -505,6 +507,12 @@ export default function DataTable({
                         </div>
                     </div>
                 </div>
+
+                {viewSwitcher && (
+                    <div className="flex items-center justify-center order-first md:order-none mb-2 md:mb-0">
+                        {viewSwitcher}
+                    </div>
+                )}
 
                 <div className="flex items-center justify-center gap-1 border-t border-border/10 md:border-0 pt-2 md:pt-0 self-center">
                     <button onClick={() => onPageChange(1)} disabled={page === 1} className="p-1.5 hover:bg-muted disabled:opacity-30 rounded-md transition-all active:scale-90">

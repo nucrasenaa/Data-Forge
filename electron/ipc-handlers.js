@@ -106,9 +106,11 @@ function setupIpcHandlers() {
                         planData = hasMultipleSets ? results[1] : (Array.isArray(results) ? results[0] : []);
                         actualData = hasMultipleSets ? results[0] : [];
                     } else if (dialect === 'postgres') {
-                        planData = await dbProxy.query(`EXPLAIN (ANALYZE, FORMAT JSON) ${queryToExec}`);
+                        const res = await dbProxy.query(`EXPLAIN (ANALYZE, FORMAT JSON) ${queryToExec}`);
+                        planData = Array.isArray(res) ? res : [res];
                     } else if (dialect === 'mysql' || dialect === 'mariadb') {
-                        planData = await dbProxy.query(`EXPLAIN ${queryToExec}`);
+                        const res = await dbProxy.query(`EXPLAIN ${queryToExec}`);
+                        planData = Array.isArray(res) ? res : [res];
                     }
 
                     return {
@@ -319,9 +321,20 @@ function setupIpcHandlers() {
             try {
                 const result = await dbProxy.query(sql);
                 let rowsAffected = 0;
-                if (dialect === 'mssql') rowsAffected = result.rowsAffected ? result.rowsAffected[0] : 0;
-                else if (dialect === 'postgres') rowsAffected = 1;
-                else rowsAffected = result.affectedRows || 0;
+                if (result) {
+                    if (dialect === 'mssql') {
+                        if (result.rowsAffected && Array.isArray(result.rowsAffected)) {
+                            rowsAffected = result.rowsAffected[0];
+                        } else if (typeof result.rowsAffected === 'number') {
+                            rowsAffected = result.rowsAffected;
+                        }
+                    } else if (dialect === 'postgres') {
+                        rowsAffected = 1;
+                    } else {
+                        // MySQL/MariaDB
+                        rowsAffected = result.affectedRows || 0;
+                    }
+                }
 
                 return { success: true, rowsAffected };
             } finally {

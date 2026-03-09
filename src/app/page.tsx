@@ -1269,175 +1269,204 @@ export default function Home() {
                       </div>
                     )}
 
-                    {(activeTab.queryResult?.data?.length > 0 || (activeTab.executionPlan && activeTab.executionPlan.length > 0)) && (
-                      <div className="absolute top-4 right-8 z-10 flex bg-card/80 backdrop-blur-md border border-border rounded-xl p-1 shadow-2xl shadow-black/20 animate-in fade-in zoom-in duration-300">
-                        <button
-                          onClick={() => updateTab(activeTab.id, { showPlan: false, showChart: false })}
-                          className={cn(
-                            "flex items-center gap-2 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] rounded-lg transition-all",
-                            !activeTab.showPlan && !activeTab.showChart ? "bg-accent/10 text-accent shadow-sm" : "hover:bg-muted text-muted-foreground"
-                          )}
-                        >
-                          <TableIcon className="w-3.5 h-3.5" /> Table
-                        </button>
-                        <button
-                          onClick={() => updateTab(activeTab.id, { showPlan: false, showChart: true })}
-                          className={cn(
-                            "flex items-center gap-2 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] rounded-lg transition-all",
-                            activeTab.showChart ? "bg-accent/10 text-accent shadow-sm" : "hover:bg-muted text-muted-foreground"
-                          )}
-                        >
-                          <PieChart className="w-3.5 h-3.5" /> Chart
-                        </button>
-                        {activeTab.executionPlan && activeTab.executionPlan.length > 0 && (
+                    {(() => {
+                      const viewSwitcherUI = (activeTab.queryResult?.data?.length > 0 || (activeTab.executionPlan && activeTab.executionPlan.length > 0)) ? (
+                        <div className="flex bg-muted/50 p-1 rounded-xl border border-border/50 shadow-sm transition-all">
                           <button
-                            onClick={() => updateTab(activeTab.id, { showPlan: true, showChart: false })}
+                            onClick={() => updateTab(activeTab.id, { showPlan: false, showChart: false })}
                             className={cn(
                               "flex items-center gap-2 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] rounded-lg transition-all",
-                              activeTab.showPlan ? "bg-accent/10 text-accent shadow-sm" : "hover:bg-muted text-muted-foreground"
+                              !activeTab.showPlan && !activeTab.showChart ? "bg-accent/10 text-accent shadow-sm" : "hover:bg-muted text-muted-foreground"
                             )}
                           >
-                            <Network className="w-3.5 h-3.5" /> Plan
+                            <TableIcon className="w-3.5 h-3.5" /> Table
                           </button>
-                        )}
-                      </div>
-                    )}
-
-                    {activeTab.error ? (
-                      <div className="flex-1 flex flex-col items-center justify-start p-8 animate-in fade-in zoom-in-95 duration-300 overflow-y-auto custom-scrollbar">
-                        <div className="max-w-2xl w-full bg-red-500/5 border border-red-500/20 rounded-3xl p-8 shadow-2xl shadow-red-500/5 transition-all hover:bg-red-500/10 group mb-8">
-                          <div className="flex items-center gap-4 mb-6">
-                            <div className="p-4 bg-red-500/10 rounded-2xl text-red-500 group-hover:scale-110 transition-transform">
-                              <AlertCircle className="w-8 h-8" />
-                            </div>
-                            <div>
-                              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-red-500">Execution Error</h3>
-                              <p className="text-[10px] text-red-400/60 font-bold uppercase tracking-widest mt-1">Syntax or Runtime Exception</p>
-                            </div>
-                          </div>
-
-                          <div className="bg-black/20 border border-red-500/10 rounded-2xl p-6 font-mono text-sm text-red-400 leading-relaxed whitespace-pre-wrap mb-8 max-h-[300px] overflow-y-auto custom-scrollbar">
-                            {activeTab.error}
-                          </div>
-
-                          <div className="flex items-center gap-4">
+                          <button
+                            onClick={() => updateTab(activeTab.id, { showPlan: false, showChart: true })}
+                            className={cn(
+                              "flex items-center gap-2 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] rounded-lg transition-all",
+                              activeTab.showChart ? "bg-accent/10 text-accent shadow-sm" : "hover:bg-muted text-muted-foreground"
+                            )}
+                          >
+                            <PieChart className="w-3.5 h-3.5" /> Chart
+                          </button>
+                          {activeTab.executionPlan && activeTab.executionPlan.length > 0 && (
                             <button
-                              onClick={async () => {
-                                const aiConfig = localStorage.getItem('ai_config');
-                                if (!aiConfig) {
-                                  alert('Please configure AI in settings first.');
-                                  return;
-                                }
-
-                                const statuses = [
-                                  "Initializing AI Engine...",
-                                  "Analyzing SQL Syntax Error...",
-                                  "Checking Database Schema Metadata...",
-                                  "Generating Optimized SQL Fix...",
-                                  "Validating Proposed Solution..."
-                                ];
-
-                                updateTab(activeTab.id, { loading: true, aiThinking: true, aiStatus: statuses[0] });
-
-                                // Cycle through statuses every 1.5s
-                                let currentStatusIdx = 0;
-                                const statusInterval = setInterval(() => {
-                                  currentStatusIdx = (currentStatusIdx + 1) % statuses.length;
-                                  updateTab(activeTab.id, { aiStatus: statuses[currentStatusIdx] });
-                                }, 1500);
-
-                                try {
-                                  const res = await apiRequest('/api/ai/generate', 'POST', {
-                                    prompt: `Fix this SQL error. Deeply analyze the error and schema to provide the correct SQL.\nERROR: ${activeTab.error}\nQUERY: ${activeTab.sqlQuery}`,
-                                    schema: metadata,
-                                    config: JSON.parse(aiConfig),
-                                    dbType: config.dbType
-                                  });
-                                  if (res.success && res.sql) {
-                                    updateTab(activeTab.id, { sqlQuery: res.sql, error: undefined, aiThinking: false });
-                                  } else {
-                                    updateTab(activeTab.id, { aiThinking: false });
-                                    alert(res.message || 'AI could not fix this error.');
-                                  }
-                                } catch (err: any) {
-                                  updateTab(activeTab.id, { aiThinking: false });
-                                  alert(err.message || 'Error communicating with AI.');
-                                } finally {
-                                  clearInterval(statusInterval);
-                                  updateTab(activeTab.id, { loading: false, aiThinking: false });
-                                }
-                              }}
-                              disabled={activeTab.loading}
+                              onClick={() => updateTab(activeTab.id, { showPlan: true, showChart: false })}
                               className={cn(
-                                "flex-1 flex items-center justify-center gap-3 py-4 text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl active:scale-[0.98]",
-                                activeTab.aiThinking
-                                  ? "bg-purple-500/50 cursor-not-allowed text-white"
-                                  : "bg-purple-500 hover:bg-purple-600 text-white shadow-purple-500/20"
+                                "flex items-center gap-2 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] rounded-lg transition-all",
+                                activeTab.showPlan ? "bg-accent/10 text-accent shadow-sm" : "hover:bg-muted text-muted-foreground"
                               )}
                             >
-                              {activeTab.aiThinking ? (
-                                <>
-                                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                  AI IS BRAINSTORMING...
-                                </>
-                              ) : (
-                                <>
-                                  <Sparkles className="w-4 h-4" /> Fix SQL with AI Assistant
-                                </>
-                              )}
+                              <Network className="w-3.5 h-3.5" /> Plan
                             </button>
-                            <button
-                              onClick={() => reloadData()}
-                              className="px-6 py-4 bg-muted hover:bg-muted/80 text-muted-foreground text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all"
-                            >
-                              Retry
-                            </button>
-                          </div>
-
-                          {activeTab.aiThinking && (
-                            <div className="mt-8 pt-8 border-t border-red-500/10 animate-in slide-in-from-top-4 duration-500">
-                              <div className="flex items-center gap-4 mb-4">
-                                <div className="flex gap-1">
-                                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" />
-                                </div>
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-400 animate-pulse">
-                                  AI Analysis: {activeTab.aiStatus}
-                                </span>
-                              </div>
-                              <div className="h-1.5 w-full bg-purple-500/10 rounded-full overflow-hidden">
-                                <div className="h-full bg-purple-500 animate-[loading-bar_2s_infinite_linear]" />
-                              </div>
-                            </div>
                           )}
                         </div>
-                      </div>
-                    ) : activeTab.showPlan && activeTab.executionPlan ? (
-                      <ExecutionPlan data={activeTab.executionPlan} dialect={config.dbType || 'mssql'} />
-                    ) : activeTab.showChart ? (
-                      <DataVisualization
-                        data={activeTab.queryResult.data}
-                        columns={activeTab.queryResult.columns}
-                        onSaveToDashboard={handleSaveToDashboard}
-                      />
-                    ) : (
-                      <DataTable
-                        data={activeTab.queryResult.data}
-                        columns={activeTab.queryResult.columns}
-                        loading={activeTab.loading}
-                        page={activeTab.page}
-                        pageSize={activeTab.pageSize}
-                        totalRows={activeTab.queryResult.totalRows}
-                        onPageChange={handlePageChange}
-                        onPageSizeChange={handlePageSizeChange}
-                        onSort={handleSort}
-                        sortColumn={activeTab.sortColumn}
-                        sortDir={activeTab.sortDir}
-                        onUpdate={handleUpdate}
-                        allowEdit={true}
-                      />
-                    )}
+                      ) : null;
+
+                      if (activeTab.error) {
+                        return (
+                          <div className="flex-1 flex flex-col items-center justify-start p-8 animate-in fade-in zoom-in-95 duration-300 overflow-y-auto custom-scrollbar">
+                            <div className="max-w-2xl w-full bg-red-500/5 border border-red-500/20 rounded-3xl p-8 shadow-2xl shadow-red-500/5 transition-all hover:bg-red-500/10 group mb-8">
+                              <div className="flex items-center gap-4 mb-6">
+                                <div className="p-4 bg-red-500/10 rounded-2xl text-red-500 group-hover:scale-110 transition-transform">
+                                  <AlertCircle className="w-8 h-8" />
+                                </div>
+                                <div>
+                                  <h3 className="text-sm font-black uppercase tracking-[0.2em] text-red-500">Execution Error</h3>
+                                  <p className="text-[10px] text-red-400/60 font-bold uppercase tracking-widest mt-1">Syntax or Runtime Exception</p>
+                                </div>
+                              </div>
+
+                              <div className="bg-black/20 border border-red-500/10 rounded-2xl p-6 font-mono text-sm text-red-400 leading-relaxed whitespace-pre-wrap mb-8 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                {activeTab.error}
+                              </div>
+
+                              <div className="flex items-center gap-4">
+                                <button
+                                  onClick={async () => {
+                                    const aiConfig = localStorage.getItem('ai_config');
+                                    if (!aiConfig) {
+                                      alert('Please configure AI in settings first.');
+                                      return;
+                                    }
+
+                                    const statuses = [
+                                      "Initializing AI Engine...",
+                                      "Analyzing SQL Syntax Error...",
+                                      "Checking Database Schema Metadata...",
+                                      "Generating Optimized SQL Fix...",
+                                      "Validating Proposed Solution..."
+                                    ];
+
+                                    updateTab(activeTab.id, { loading: true, aiThinking: true, aiStatus: statuses[0] });
+
+                                    // Cycle through statuses every 1.5s
+                                    let currentStatusIdx = 0;
+                                    const statusInterval = setInterval(() => {
+                                      currentStatusIdx = (currentStatusIdx + 1) % statuses.length;
+                                      updateTab(activeTab.id, { aiStatus: statuses[currentStatusIdx] });
+                                    }, 1500);
+
+                                    try {
+                                      const res = await apiRequest('/api/ai/generate', 'POST', {
+                                        prompt: `Fix this SQL error. Deeply analyze the error and schema to provide the correct SQL.\nERROR: ${activeTab.error}\nQUERY: ${activeTab.sqlQuery}`,
+                                        schema: metadata,
+                                        config: JSON.parse(aiConfig),
+                                        dbType: config.dbType
+                                      });
+                                      if (res.success && res.sql) {
+                                        updateTab(activeTab.id, { sqlQuery: res.sql, error: undefined, aiThinking: false });
+                                      } else {
+                                        updateTab(activeTab.id, { aiThinking: false });
+                                        alert(res.message || 'AI could not fix this error.');
+                                      }
+                                    } catch (err: any) {
+                                      updateTab(activeTab.id, { aiThinking: false });
+                                      alert(err.message || 'Error communicating with AI.');
+                                    } finally {
+                                      clearInterval(statusInterval);
+                                      updateTab(activeTab.id, { loading: false, aiThinking: false });
+                                    }
+                                  }}
+                                  disabled={activeTab.loading}
+                                  className={cn(
+                                    "flex-1 flex items-center justify-center gap-3 py-4 text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl active:scale-[0.98]",
+                                    activeTab.aiThinking
+                                      ? "bg-purple-500/50 cursor-not-allowed text-white"
+                                      : "bg-purple-500 hover:bg-purple-600 text-white shadow-purple-500/20"
+                                  )}
+                                >
+                                  {activeTab.aiThinking ? (
+                                    <>
+                                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                      AI IS BRAINSTORMING...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles className="w-4 h-4" /> Fix SQL with AI Assistant
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => reloadData()}
+                                  className="px-6 py-4 bg-muted hover:bg-muted/80 text-muted-foreground text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all"
+                                >
+                                  Retry
+                                </button>
+                              </div>
+
+                              {activeTab.aiThinking && (
+                                <div className="mt-8 pt-8 border-t border-red-500/10 animate-in slide-in-from-top-4 duration-500">
+                                  <div className="flex items-center gap-4 mb-4">
+                                    <div className="flex gap-1">
+                                      <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                      <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                      <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" />
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-400 animate-pulse">
+                                      AI Analysis: {activeTab.aiStatus}
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-purple-500/10 rounded-full overflow-hidden">
+                                    <div className="h-full bg-purple-500 animate-[loading-bar_2s_infinite_linear]" />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (activeTab.showPlan && activeTab.executionPlan) {
+                        return (
+                          <div className="flex-1 flex flex-col overflow-hidden">
+                            <div className="flex-1 overflow-auto">
+                              <ExecutionPlan data={activeTab.executionPlan} dialect={config.dbType || 'mssql'} />
+                            </div>
+                            <div className="h-14 border-t border-border bg-card/40 flex items-center justify-center shrink-0 backdrop-blur-md">
+                              {viewSwitcherUI}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (activeTab.showChart) {
+                        return (
+                          <div className="flex-1 flex flex-col overflow-hidden">
+                            <div className="flex-1 overflow-auto">
+                              <DataVisualization
+                                data={activeTab.queryResult.data}
+                                columns={activeTab.queryResult.columns}
+                                onSaveToDashboard={handleSaveToDashboard}
+                              />
+                            </div>
+                            <div className="h-14 border-t border-border bg-card/40 flex items-center justify-center shrink-0 backdrop-blur-md">
+                              {viewSwitcherUI}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <DataTable
+                          data={activeTab.queryResult.data}
+                          columns={activeTab.queryResult.columns}
+                          loading={activeTab.loading}
+                          page={activeTab.page}
+                          pageSize={activeTab.pageSize}
+                          totalRows={activeTab.queryResult.totalRows}
+                          onPageChange={handlePageChange}
+                          onPageSizeChange={handlePageSizeChange}
+                          onSort={handleSort}
+                          sortColumn={activeTab.sortColumn}
+                          sortDir={activeTab.sortDir}
+                          onUpdate={handleUpdate}
+                          allowEdit={true}
+                          viewSwitcher={viewSwitcherUI}
+                        />
+                      );
+                    })()}
                   </div>
                 </div>
               ) : activeTab.type === 'table' ? (

@@ -121,10 +121,21 @@ async function getDbProxy(config) {
         const proxy = {
             query: async (sql) => {
                 const result = await pool.request().query(sql);
-                if (result.recordsets && result.recordsets.length > 1) {
-                    return result.recordsets;
+                let data = (result.recordsets && result.recordsets.length > 1)
+                    ? result.recordsets
+                    : result.recordset;
+
+                // For UPDATES/INSERTS where recordset is undefined, return an object with rowsAffected
+                if (data === undefined || data === null) {
+                    return { rowsAffected: result.rowsAffected, success: true };
                 }
-                return result.recordset;
+
+                // If data is an array/object, attach rowsAffected for easier access
+                if (typeof data === 'object') {
+                    data.rowsAffected = result.rowsAffected;
+                }
+
+                return data;
             },
             close: async () => {
                 await pool.close();
