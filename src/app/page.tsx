@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { cn, encryptValue, decryptValue, decryptValueDetailed } from '@/lib/utils';
 import { apiRequest } from '@/lib/api';
 import TableDesigner from '@/components/TableDesigner';
+import FilterInput from '@/components/FilterInput';
 import ImportWizard from '@/components/ImportWizard';
 import VisualQueryBuilder from '@/components/VisualQueryBuilder';
 import ViewDesigner from '@/components/ViewDesigner';
@@ -1494,19 +1495,13 @@ export default function Home() {
                           <Filter className="w-3.5 h-3.5" /> {activeTab.showFilter ? (window?.innerWidth < 768 ? 'ON' : 'Filtering ON') : 'Quick Filter'}
                         </button>
                         {activeTab.showFilter && (
-                          <form onSubmit={handleFilterSearch} className="flex-1 md:max-w-md animate-in slide-in-from-left-2 fade-in">
-                            <div className="relative flex items-center">
-                              <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground opacity-50" />
-                              <input
-                                type="text"
-                                placeholder="WHERE..."
-                                className="w-full bg-muted/50 border border-border/50 rounded-lg pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent transition-all font-mono"
-                                value={activeTab.filter}
-                                onChange={(e) => updateTab(activeTab.id, { filter: e.target.value })}
-                                autoFocus
-                              />
-                            </div>
-                          </form>
+                          <FilterInput
+                            value={activeTab.filter}
+                            onChange={(val: string) => updateTab(activeTab.id, { filter: val })}
+                            onSubmit={handleFilterSearch}
+                            columns={activeTab.queryResult.columns}
+                            autoFocus
+                          />
                         )}
                       </div>
                     </div>
