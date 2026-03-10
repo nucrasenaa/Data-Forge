@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import Link from 'next/link';
 import { Book, FileText, ArrowLeft, Database, Terminal, Settings, ShieldAlert, Layers, ScrollText, EyeOff, Sparkles, Shield } from 'lucide-react';
+import DocNavigation from './DocNavigation';
 
 export default function DocsLayout({
     children,
@@ -28,8 +29,8 @@ export default function DocsLayout({
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div className="flex items-center gap-2">
-                        <div className="p-2 bg-accent/10 rounded-xl">
-                            <Database className="w-5 h-5 text-accent" />
+                        <div className="p-1.5 bg-accent/10 rounded-xl overflow-hidden shadow-inner border border-accent/20">
+                            <img src="/icons/icon-512.png" alt="Data Forge" className="w-6 h-6 object-contain" />
                         </div>
                         <h1 className="font-black tracking-tighter uppercase gradient-text">Data Forge Docs</h1>
                     </div>
@@ -48,25 +49,7 @@ export default function DocsLayout({
                 <aside className="w-64 shrink-0 space-y-8 sticky top-28 h-fit">
                     <section>
                         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 mb-4 px-4">Core Docs</h2>
-                        <nav className="space-y-1">
-                            {[
-                                { name: 'Overview', slug: '', icon: Book },
-                                { name: 'User Guide', slug: 'USER_GUIDE', icon: FileText },
-                                { name: 'Developer Guide', slug: 'DEVELOPER_GUIDE', icon: Settings },
-                                { name: 'Dialect Support', slug: 'DIALECTS', icon: Database },
-                                { name: 'Troubleshooting', slug: 'TROUBLESHOOTING', icon: ShieldAlert },
-                                { name: 'Release Notes', slug: '../RELEASE_NOTES', icon: ScrollText },
-                            ].map((item) => (
-                                <Link
-                                    key={item.slug}
-                                    href={item.slug === '' ? '/documents' : item.slug.startsWith('../') ? `/${item.slug.replace('../', '')}` : `/documents/${item.slug}`}
-                                    className="flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-muted transition-all group border border-transparent hover:border-border/50"
-                                >
-                                    <item.icon className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
-                                    <span className="text-sm font-bold opacity-70 group-hover:opacity-100">{item.name}</span>
-                                </Link>
-                            ))}
-                        </nav>
+                        <DocNavigation />
                     </section>
 
                     <section>

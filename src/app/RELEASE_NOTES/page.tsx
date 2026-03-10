@@ -18,8 +18,8 @@ export default async function ReleaseNotesPage() {
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div className="flex items-center gap-2">
-                        <div className="p-2 bg-accent/10 rounded-xl">
-                            <Database className="w-5 h-5 text-accent" />
+                        <div className="p-1.5 bg-accent/10 rounded-xl overflow-hidden shadow-inner border border-accent/20">
+                            <img src="/icons/icon-512.png" alt="Data Forge" className="w-6 h-6 object-contain" />
                         </div>
                         <h1 className="font-black tracking-tighter uppercase gradient-text">Data Forge Docs</h1>
                     </div>
