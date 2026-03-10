@@ -123,7 +123,7 @@ export default function ConnectionForm({ onConnect, onCancel, initialConfig }: C
                     )}
                     <div className="text-center space-y-2">
                         <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-accent/10 mb-2">
-                            <img src="/icon.png" alt="Data Forge" className="w-12 h-12 object-contain" />
+                            <img src="/icons/icon-512.png" alt="Data Forge" className="w-12 h-12 object-contain" />
                         </div>
                         <h1 className="text-4xl font-black tracking-tight gradient-text uppercase">Data Forge</h1>
                         <p className="text-muted-foreground text-sm font-medium">Configure your database environment</p>

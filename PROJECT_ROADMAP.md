@@ -5,6 +5,7 @@ This document tracks the development progress of **Data Forge**. It serves as a 
 ## 🛠 Project Status Summary
 - **Primary Dialect**: MSSQL (SQL Server)
 - **Secondary Dialects**: PostgreSQL, MySQL, MariaDB
+- **Database Integration Roadmap**: [DATABASE_INTEGRATION_ROADMAP.md](./DATABASE_INTEGRATION_ROADMAP.md)
 - **Current Core**: Next.js + Electron + Monaco Editor + Basic CRUD
 
 ---
