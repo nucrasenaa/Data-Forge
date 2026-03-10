@@ -25,7 +25,7 @@ export default async function ReleaseNotesPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">
-                    <span>Version 1.2.1</span>
+                    <span>Version 1.4.0</span>
                     <div className="w-1 h-1 rounded-full bg-border" />
                     <span className="px-2 py-0.5 rounded bg-accent/10 text-accent border border-accent/20">Latest</span>
                     <div className="w-1 h-1 rounded-full bg-border" />
@@ -55,9 +55,9 @@ export default async function ReleaseNotesPage() {
                         <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 mb-4 px-4">Versions</h2>
                         <div className="space-y-1 px-2">
                             {[
-                                { ver: 'v1.2.1', label: '2026-03-06', badge: 'Latest', color: 'text-accent bg-accent/10 border-accent/20' },
-                                { ver: 'v1.1.1', label: '2026-03-05', badge: '', color: 'text-muted-foreground bg-muted/30 border-border/30' },
-                                { ver: 'v1.1.0', label: '2026-03-05', badge: '', color: 'text-muted-foreground bg-muted/30 border-border/30' },
+                                { ver: 'v1.4.0', label: '2026-03-10', badge: 'Latest', color: 'text-accent bg-accent/10 border-accent/20' },
+                                { ver: 'v1.3.0', label: '2026-03-09', badge: '', color: 'text-muted-foreground bg-muted/30 border-border/30' },
+                                { ver: 'v1.2.1', label: '2026-03-06', badge: '', color: 'text-muted-foreground bg-muted/30 border-border/30' },
                                 { ver: 'v1.0.0', label: '2026-03-05', badge: 'Launch', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
                             ].map((v) => (
                                 <div key={v.ver} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-[10px] font-black uppercase tracking-wider ${v.color}`}>
