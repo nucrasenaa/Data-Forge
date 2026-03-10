@@ -7,6 +7,9 @@ import {
     Key,
     ShieldCheck,
     UserPlus,
+    ShieldMinus,
+    Plus,
+    Trash2,
     Lock,
     Search,
     RefreshCw,
@@ -14,7 +17,8 @@ import {
     ChevronRight,
     ChevronDown,
     Loader2,
-    Database
+    Database,
+    X
 } from 'lucide-react';
 import { apiRequest } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -33,6 +37,17 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+
+    // New management state
+    const [showAddUser, setShowAddUser] = useState(false);
+    const [newUser, setNewUser] = useState({ name: '', password: '' });
+    const [showGrantPerm, setShowGrantPerm] = useState(false);
+    const [newPerm, setNewPerm] = useState({ permission: 'SELECT', object: '' });
+    const [actionLoading, setActionLoading] = useState(false);
+
+    // Reset password state
+    const [showResetPassword, setShowResetPassword] = useState(false);
+    const [newPass, setNewPass] = useState('');
 
     useEffect(() => {
         const fetchDbs = async () => {
@@ -129,6 +144,170 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
         fetchUsers(false, selectedDb);
     }, [fetchUsers, selectedDb]);
 
+    const handleCreateUser = async () => {
+        if (!newUser.name || !newUser.password) {
+            alert('Please provide both name and password');
+            return;
+        }
+
+        setActionLoading(true);
+        try {
+            const dialect = config?.dbType || 'mssql';
+            let query = '';
+
+            if (dialect === 'mssql') {
+                query = `
+                    CREATE LOGIN [${newUser.name}] WITH PASSWORD = '${newUser.password}';
+                    USE [${selectedDb}];
+                    CREATE USER [${newUser.name}] FOR LOGIN [${newUser.name}];
+                `;
+            } else if (dialect === 'postgres') {
+                query = `CREATE ROLE "${newUser.name}" WITH LOGIN PASSWORD '${newUser.password}';`;
+            } else {
+                query = `CREATE USER '${newUser.name}'@'%' IDENTIFIED BY '${newUser.password}';`;
+            }
+
+            const res = await apiRequest('/api/db/query', 'POST', { config, query });
+            if (res.success) {
+                alert(`User ${newUser.name} created successfully`);
+                setShowAddUser(false);
+                setNewUser({ name: '', password: '' });
+                fetchUsers(true);
+            } else {
+                alert(res.error || 'Failed to create user');
+            }
+        } catch (err: any) {
+            alert(err.message || 'Error occurred');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleDeleteUser = async (userName: string) => {
+        if (!confirm(`Are you sure you want to delete user ${userName}?`)) return;
+
+        setActionLoading(true);
+        try {
+            const dialect = config?.dbType || 'mssql';
+            let query = '';
+
+            if (dialect === 'mssql') {
+                query = `
+                    USE [${selectedDb}];
+                    IF EXISTS (SELECT * FROM sys.database_principals WHERE name = '${userName}') DROP USER [${userName}];
+                    IF EXISTS (SELECT * FROM sys.server_principals WHERE name = '${userName}') DROP LOGIN [${userName}];
+                `;
+            } else if (dialect === 'postgres') {
+                query = `DROP ROLE "${userName}";`;
+            } else {
+                query = `DROP USER '${userName}';`;
+            }
+
+            const res = await apiRequest('/api/db/query', 'POST', { config, query });
+            if (res.success) {
+                alert(`User ${userName} deleted`);
+                if (selectedUser?.userName === userName) setSelectedUser(null);
+                fetchUsers(true);
+            } else {
+                alert(res.error || 'Failed to delete user');
+            }
+        } catch (err: any) {
+            alert(err.message || 'Error occurred');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleGrantPermission = async () => {
+        if (!selectedUser) return;
+
+        setActionLoading(true);
+        try {
+            const dialect = config?.dbType || 'mssql';
+            let query = '';
+
+            if (dialect === 'mssql') {
+                query = `USE [${selectedDb}]; GRANT ${newPerm.permission} ${newPerm.object ? `ON ${newPerm.object}` : ''} TO [${selectedUser.userName}];`;
+            } else if (dialect === 'postgres') {
+                query = `GRANT ${newPerm.permission} ON ${newPerm.object || 'DATABASE "' + selectedDb + '"'} TO "${selectedUser.userName}";`;
+            }
+
+            const res = await apiRequest('/api/db/query', 'POST', { config, query });
+            if (res.success) {
+                alert('Permission granted');
+                setShowGrantPerm(false);
+                fetchUserDetails(selectedUser);
+            } else {
+                alert(res.error || 'Failed to grant permission');
+            }
+        } catch (err: any) {
+            alert(err.message || 'Error occurred');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleRevokePermission = async (perm: any) => {
+        if (!selectedUser) return;
+
+        setActionLoading(true);
+        try {
+            const dialect = config?.dbType || 'mssql';
+            let query = '';
+            const pName = perm.permission || perm.privilege_type;
+            const objName = perm.objectName || perm.table_name;
+
+            if (dialect === 'mssql') {
+                query = `USE [${selectedDb}]; REVOKE ${pName} ${objName ? `ON [${objName}]` : ''} FROM [${selectedUser.userName}];`;
+            } else if (dialect === 'postgres') {
+                query = `REVOKE ${pName} ON ${objName ? `TABLE "${objName}"` : 'DATABASE "' + selectedDb + '"'} FROM "${selectedUser.userName}";`;
+            }
+
+            const res = await apiRequest('/api/db/query', 'POST', { config, query });
+            if (res.success) {
+                alert('Permission revoked');
+                fetchUserDetails(selectedUser);
+            } else {
+                alert(res.error || 'Failed to revoke permission');
+            }
+        } catch (err: any) {
+            alert(err.message || 'Error occurred');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleResetPassword = async () => {
+        if (!selectedUser || !newPass) return;
+
+        setActionLoading(true);
+        try {
+            const dialect = config?.dbType || 'mssql';
+            let query = '';
+
+            if (dialect === 'mssql') {
+                query = `ALTER LOGIN [${selectedUser.userName}] WITH PASSWORD = '${newPass}';`;
+            } else if (dialect === 'postgres') {
+                query = `ALTER ROLE "${selectedUser.userName}" WITH PASSWORD '${newPass}';`;
+            } else {
+                query = `ALTER USER '${selectedUser.userName}'@'%' IDENTIFIED BY '${newPass}';`;
+            }
+
+            const res = await apiRequest('/api/db/query', 'POST', { config, query });
+            if (res.success) {
+                alert('Password reset successfully');
+                setShowResetPassword(false);
+                setNewPass('');
+            } else {
+                alert(res.error || 'Failed to reset password');
+            }
+        } catch (err: any) {
+            alert(err.message || 'Error occurred');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const filteredUsers = users.filter(u =>
         u.userName.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -182,8 +361,8 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
             <div className="flex-1 flex overflow-hidden">
                 {/* User List Panel */}
                 <div className="w-80 border-r border-border/50 bg-muted/10 flex flex-col shrink-0">
-                    <div className="p-4 border-b border-border/50">
-                        <div className="relative">
+                    <div className="p-4 border-b border-border/50 flex items-center justify-between">
+                        <div className="relative flex-1 mr-2">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-30" />
                             <input
                                 type="text"
@@ -193,6 +372,13 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
+                        <button
+                            onClick={() => setShowAddUser(true)}
+                            className="p-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl transition-all shadow-lg shadow-indigo-500/20"
+                            title="Add New User"
+                        >
+                            <Plus className="w-4 h-4" />
+                        </button>
                     </div>
 
                     <div className="flex-1 overflow-auto p-2 space-y-1">
@@ -205,28 +391,68 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
                             <div className="text-center py-12 text-[10px] text-muted-foreground uppercase tracking-widest opacity-40">No users found</div>
                         ) : (
                             filteredUsers.map((user) => (
-                                <button
-                                    key={user.userName}
-                                    onClick={() => fetchUserDetails(user)}
-                                    className={cn(
-                                        "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left group",
-                                        selectedUser?.userName === user.userName
-                                            ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
-                                            : "text-muted-foreground hover:bg-muted/50 border border-transparent"
-                                    )}
-                                >
-                                    <div className={cn("p-2 rounded-lg transition-colors", selectedUser?.userName === user.userName ? "bg-indigo-500/20" : "bg-muted/50 group-hover:bg-muted")}>
-                                        <Shield className="w-3.5 h-3.5" />
-                                    </div>
-                                    <div className="flex-1 truncate">
-                                        <div className="truncate mb-0.5">{user.userName}</div>
-                                        <div className="text-[9px] uppercase tracking-widest opacity-40 font-black">{user.type || user.host || 'DB Role'}</div>
-                                    </div>
-                                    <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", selectedUser?.userName === user.userName ? "translate-x-0" : "-translate-x-2 opacity-0 group-hover:opacity-40 group-hover:translate-x-0")} />
-                                </button>
+                                <div key={user.userName} className="group relative">
+                                    <button
+                                        onClick={() => fetchUserDetails(user)}
+                                        className={cn(
+                                            "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-left",
+                                            selectedUser?.userName === user.userName
+                                                ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
+                                                : "text-muted-foreground hover:bg-muted/50 border border-transparent"
+                                        )}
+                                    >
+                                        <div className={cn("p-2 rounded-lg transition-colors", selectedUser?.userName === user.userName ? "bg-indigo-500/20" : "bg-muted/50 group-hover:bg-muted")}>
+                                            <Shield className="w-3.5 h-3.5" />
+                                        </div>
+                                        <div className="flex-1 truncate">
+                                            <div className="truncate mb-0.5">{user.userName}</div>
+                                            <div className="text-[9px] uppercase tracking-widest opacity-40 font-black">{user.type || user.host || 'DB Role'}</div>
+                                        </div>
+                                        <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", selectedUser?.userName === user.userName ? "translate-x-0" : "-translate-x-2 opacity-0 group-hover:opacity-40 group-hover:translate-x-0")} />
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteUser(user.userName); }}
+                                        disabled={actionLoading}
+                                        className="absolute right-10 top-1/2 -translate-y-1/2 p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
                             ))
                         )}
                     </div>
+
+                    {showAddUser && (
+                        <div className="p-4 border-t border-border/50 bg-card/50 animate-in slide-in-from-bottom-4 duration-300">
+                            <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest">Create New Principal</h4>
+                                <button onClick={() => setShowAddUser(false)}><X className="w-3.5 h-3.5" /></button>
+                            </div>
+                            <div className="space-y-3">
+                                <input
+                                    type="text"
+                                    placeholder="Username"
+                                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
+                                    value={newUser.name}
+                                    onChange={e => setNewUser({ ...newUser, name: e.target.value })}
+                                />
+                                <input
+                                    type="password"
+                                    placeholder="Password"
+                                    className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
+                                    value={newUser.password}
+                                    onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                                />
+                                <button
+                                    onClick={handleCreateUser}
+                                    disabled={actionLoading}
+                                    className="w-full py-2 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all"
+                                >
+                                    {actionLoading ? 'Creating...' : 'Establish User'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Permissions Workspace */}
@@ -256,6 +482,13 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
                                             <span className="px-3 py-1 bg-indigo-500/10 text-indigo-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-indigo-500/20">
                                                 Active Principal
                                             </span>
+                                            <button
+                                                onClick={() => setShowResetPassword(!showResetPassword)}
+                                                className="p-1.5 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 rounded-lg transition-all ml-auto group"
+                                                title="Reset Credentials"
+                                            >
+                                                <Key className="w-4 h-4 group-hover:rotate-45 transition-transform" />
+                                            </button>
                                         </div>
                                         <div className="flex gap-6 items-center">
                                             <div className="space-y-1">
@@ -273,19 +506,96 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
                                                 <p className="text-xs font-mono">{selectedUser.createDate ? new Date(selectedUser.createDate).toLocaleDateString() : 'N/A'}</p>
                                             </div>
                                         </div>
+
+                                        {showResetPassword && (
+                                            <div className="mt-6 pt-6 border-t border-border/50 flex items-center gap-4 animate-in slide-in-from-top-2 duration-300">
+                                                <div className="flex-1 max-w-sm relative">
+                                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-30" />
+                                                    <input
+                                                        type="password"
+                                                        placeholder="Enter New Secure Secret..."
+                                                        className="w-full bg-muted/50 border border-border rounded-xl pl-10 pr-4 py-2.5 text-xs focus:ring-1 focus:ring-amber-500 outline-none transition-all"
+                                                        value={newPass}
+                                                        onChange={e => setNewPass(e.target.value)}
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={handleResetPassword}
+                                                    disabled={actionLoading}
+                                                    className="px-8 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-amber-500/20"
+                                                >
+                                                    {actionLoading ? 'Updating...' : 'Revise Auth'}
+                                                </button>
+                                                <button
+                                                    onClick={() => { setShowResetPassword(false); setNewPass(''); }}
+                                                    className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+                                                >
+                                                    Discard
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
                             {/* Permissions Grid */}
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Key className="w-4 h-4 text-amber-500" />
                                         <h3 className="text-xs font-black uppercase tracking-widest">Effective Permissions</h3>
                                     </div>
-                                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{userPermissions.length} Rights Granted</span>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{userPermissions.length} Rights Granted</span>
+                                        <button
+                                            onClick={() => setShowGrantPerm(!showGrantPerm)}
+                                            className="px-3 py-1 bg-indigo-500 hover:bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg flex items-center gap-2 transition-all"
+                                        >
+                                            <Plus className="w-3 h-3" /> Grant New
+                                        </button>
+                                    </div>
                                 </div>
+
+                                {showGrantPerm && (
+                                    <div className="bg-card border-2 border-dashed border-indigo-500/20 rounded-2xl p-6 animate-in zoom-in-95 duration-200">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Security Grant Wizard</span>
+                                            <button onClick={() => setShowGrantPerm(false)}><X className="w-4 h-4 text-muted-foreground" /></button>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <select
+                                                className="bg-muted/50 border border-border rounded-xl px-4 py-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                value={newPerm.permission}
+                                                onChange={e => setNewPerm({ ...newPerm, permission: e.target.value })}
+                                            >
+                                                <option value="SELECT">SELECT</option>
+                                                <option value="INSERT">INSERT</option>
+                                                <option value="UPDATE">UPDATE</option>
+                                                <option value="DELETE">DELETE</option>
+                                                <option value="REFERENCES">REFERENCES</option>
+                                                <option value="ALTER">ALTER</option>
+                                                <option value="CONTROL">CONTROL</option>
+                                                <option value="VIEW DEFINITION">VIEW DEFINITION</option>
+                                            </select>
+                                            <input
+                                                type="text"
+                                                placeholder="Object Name (e.g. [dbo].[Table])"
+                                                className="bg-muted/50 border border-border rounded-xl px-4 py-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none sm:col-span-2"
+                                                value={newPerm.object}
+                                                onChange={e => setNewPerm({ ...newPerm, object: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="mt-4 flex justify-end">
+                                            <button
+                                                onClick={handleGrantPermission}
+                                                disabled={actionLoading}
+                                                className="px-6 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-500/20"
+                                            >
+                                                {actionLoading ? 'Processing...' : 'Authorize Privilege'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 gap-3">
                                     {userPermissions.length === 0 ? (
@@ -297,8 +607,8 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
                                         userPermissions.map((perm, i) => (
                                             <div key={i} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between hover:border-indigo-500/30 transition-all group">
                                                 <div className="flex items-center gap-4">
-                                                    <div className={cn("p-2 rounded-lg bg-muted group-hover:bg-indigo-500/10 transition-colors", perm.state === 'GRANT' ? "text-emerald-500" : "text-amber-500")}>
-                                                        {perm.state === 'GRANT' ? <ShieldCheck className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+                                                    <div className={cn("p-2 rounded-lg bg-muted group-hover:bg-indigo-500/10 transition-colors", perm.state === 'GRANT' || perm.privilege_type ? "text-emerald-500" : "text-amber-500")}>
+                                                        {perm.state === 'GRANT' || perm.privilege_type ? <ShieldCheck className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
                                                     </div>
                                                     <div>
                                                         <div className="text-xs font-mono font-bold">{perm.permission || perm.privilege_type}</div>
@@ -307,9 +617,19 @@ export default function UserManager({ config, onClose }: UserManagerProps) {
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <span className={cn("px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest", perm.state === 'GRANT' ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500")}>
-                                                    {perm.state || 'Authorized'}
-                                                </span>
+                                                <div className="flex items-center gap-4">
+                                                    <span className={cn("px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest", (perm.state === 'GRANT' || perm.privilege_type) ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500")}>
+                                                        {perm.state || 'Authorized'}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => handleRevokePermission(perm)}
+                                                        disabled={actionLoading}
+                                                        className="p-1.5 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                                                        title="Revoke Access"
+                                                    >
+                                                        <ShieldMinus className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))
                                     )}
