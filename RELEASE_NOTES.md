@@ -1,6 +1,22 @@
 # 🚀 Data Forge Release Notes
 
-## [v1.4.0] - 2026-03-10
+## [v1.4.1] - 2026-03-10
+
+### 🛡️ Enhanced AI Security
+- **Runtime Decryption**: AI API keys are now decrypted only at the moment of use. They remain encrypted at rest using AES-GCM in `localStorage` and configuration files, preventing plain-text exposure.
+- **Unified Secure Handling**: Integrated secure decryption logic across all AI-driven features:
+    - **AICopilot**: Instant decryption for schema-aware SQL generation.
+    - **SQL Fixer**: Secure key handling during multi-step error analysis.
+    - **Performance Advisor**: Decrypted access for execution plan optimization.
+    - **Plan Explainer**: Safe API key usage for human-readable plan breakdowns.
+
+### 💅 AI Copilot UI Overhaul
+- **Responsive Geometry**: The AI overlay now uses flexible widths (`w-[95%]`) and max-height constraints to fit perfectly within the SQL Editor on screens of all sizes.
+- **Scrollable Intelligence**: Added a dedicated scrollable area for long AI responses (`overflow-y-auto`) while pinning action buttons (Execute/Insert) to the bottom.
+- **Layout Refinement**: Improved the spacing and readability of safety warnings and generated SQL previews.
+
+---
+
 
 ### 🧠 Intelligent Querying & Filtering
 - **Smart Filter Suggestions**: Replaced the standard filter input with a context-aware **Intelligent Filter**.

@@ -11,6 +11,20 @@ export default async function DocPage() {
 
     const newFeatures = [
         {
+            icon: Shield,
+            title: 'AI Key Security',
+            desc: 'AES-GCM encryption for API keys at rest with just-in-time runtime decryption for enhanced safety.',
+            color: 'from-accent/10 to-accent/5 border-accent/20 text-accent',
+            iconColor: 'text-accent',
+        },
+        {
+            icon: Sparkles,
+            title: 'AI UI Overhaul',
+            desc: 'Responsive AI overlay with internal scrolling and pinned action buttons for long responses.',
+            color: 'from-purple-500/10 to-purple-500/5 border-purple-500/20 text-purple-400',
+            iconColor: 'text-purple-400',
+        },
+        {
             icon: Sparkles,
             title: 'Intelligent Filter',
             desc: 'Real-time column and SQL keyword suggestions in table grids with keyboard-driven navigation.',
@@ -18,32 +32,11 @@ export default async function DocPage() {
             iconColor: 'text-blue-400',
         },
         {
-            icon: Shield,
-            title: 'Environment Colors',
-            desc: 'Visual distinction for Prod/Staging/Dev environments via header bars and sidebars.',
-            color: 'from-emerald-500/10 to-emerald-500/5 border-emerald-500/20 text-emerald-400',
-            iconColor: 'text-emerald-400',
-        },
-        {
-            icon: ShieldAlert,
-            title: 'Read-Only Mode',
-            desc: 'Server-enforced policy that blocks all destructive SQL (UPDATE, DELETE, DROP, etc.) on critical connections.',
-            color: 'from-red-500/10 to-red-500/5 border-red-500/20 text-red-400',
-            iconColor: 'text-red-400',
-        },
-        {
-            icon: Sparkles,
-            title: 'SQL Linter & Formatter',
-            desc: 'Real-time detection of 10 SQL anti-patterns as you type. One-click formatter with Cmd+Shift+F.',
-            color: 'from-orange-500/10 to-orange-500/5 border-orange-500/20 text-orange-400',
-            iconColor: 'text-orange-400',
-        },
-        {
             icon: EyeOff,
             title: 'Data Masking',
-            desc: 'Auto-detects sensitive columns (email, phone, SSN, cards) and masks values in result grids. Click-to-reveal per cell.',
-            color: 'from-purple-500/10 to-purple-500/5 border-purple-500/20 text-purple-400',
-            iconColor: 'text-purple-400',
+            desc: 'Auto-detects sensitive columns (email, phone, SSN, cards) and masks values in result grids.',
+            color: 'from-emerald-500/10 to-emerald-500/5 border-emerald-500/20 text-emerald-400',
+            iconColor: 'text-emerald-400',
         },
     ];
 
@@ -53,7 +46,7 @@ export default async function DocPage() {
             <div className="mb-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 text-accent text-[10px] font-black uppercase tracking-widest mb-4 border border-accent/20">
                     <Zap className="w-3 h-3" />
-                    Documentation Hub — v1.4.0
+                    Documentation Hub — v1.4.1
                 </div>
                 <h1 className="text-5xl font-black tracking-tighter uppercase gradient-text leading-tight">
                     Knowledge Base
@@ -69,7 +62,7 @@ export default async function DocPage() {
                 <div className="relative">
                     <div className="flex items-center gap-3 mb-4">
                         <GitBranch className="w-5 h-5 text-accent" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-accent">What's New in v1.4.0</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-accent">What's New in v1.4.1</span>
                         <span className="px-2 py-0.5 rounded bg-accent text-accent-foreground text-[9px] font-black uppercase tracking-wider">Latest</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

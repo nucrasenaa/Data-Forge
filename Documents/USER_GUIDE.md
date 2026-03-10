@@ -44,6 +44,11 @@ The standard table filter has been replaced with a context-aware **Intelligent F
 - **Auto-Positioning**: Smartly handles cursor placement and spacing after a selection.
 - **Context-Aware**: Suggestions only appear when they are syntactically relevant.
 
+### AI Key Security & UI Overhaul *(v1.4.1)*
+- **Runtime Decryption**: AI API keys are now securely decrypted only at the moment of API call. This prevents sensitive keys from existing in plain-text within the application's memory or configuration files for longer than necessary.
+- **Responsive AI Overlay**: The AI Copilot menu has been redesigned to be fully responsive (`w-[95%]`), fitting into any workspace layout.
+- **Scrollable Intelligence**: Long AI generated responses can now be scrolled internally within the menu, with action buttons (Insert/Execute) remaining pinned to the bottom for easy access.
+
 ### Bulk Row Deletion *(v1.2.0)*
 1. Click checkboxes on the left side of rows to select them (or use the header checkbox to Select All).
 2. The **Drop (N) Rows** red button appears in the footer.

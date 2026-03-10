@@ -1670,7 +1670,7 @@ export default function Home() {
             <div className="w-1 h-1 rounded-full bg-border" />
             <span>Bangkok, Thailand</span>
             <div className="w-1 h-1 rounded-full bg-border" />
-            <span className="text-accent/40">v1.4.0</span>
+            <span className="text-accent/40">v1.4.1</span>
           </div>
           <div className="flex items-center gap-4">
             <button

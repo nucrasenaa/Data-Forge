@@ -1,4 +1,4 @@
-# Data Forge v1.4.0
+# Data Forge v1.4.1
 
 **Data Forge** is an enterprise-grade, high-performance database management studio and AI-powered SQL editor. Built with **Next.js** and **Electron**, it offers a sophisticated **"Nebula" aesthetic**—a premium, immersive interface with deep grays, restrained accents, and glassmorphism.
 
@@ -8,7 +8,21 @@ Data Forge provides a unified, multi-tabbed workspace for **SQL Server (MSSQL)**
 
 ---
 
-## 🚀 What's New in v1.4.0
+## 🚀 What's New in v1.4.1
+
+### 🛡️ Enhanced AI Security
+- **Runtime Decryption** — AI API keys are now decrypted only during active generation calls.
+- **Encrypted at Rest** — Keys remain securely encrypted in `localStorage` and configuration files using AES-GCM.
+- **Hardened Fixes** — Extended secure key handling to SQL Fixer, Performance Advisor, and Execution Plan analysis.
+
+### 💅 AI Copilot UI Overhaul
+- **Responsive Geometry** — The AI overlay now uses responsive widths (`w-[95%]`) to fit perfectly on any screen size.
+- **Scrollable Intelligence** — Added internal scrolling and pinned action buttons to handle long AI responses without overflowing the editor.
+- **Visual Refinement** — Improved layout for safety warnings and generated SQL previews.
+
+---
+
+## 🚀 Previously in v1.4.0
 
 ### 🧠 Intelligent Querying & Filtering
 - **Smart Filter Suggestions** — Replaced standard table filtering with a context-aware **Intelligent Filter**.
@@ -18,9 +32,6 @@ Data Forge provides a unified, multi-tabbed workspace for **SQL Server (MSSQL)**
 ### 🍱 Branding & Identity
 - **New App Icon** — The official high-resolution branding is now featured on the landing page.
 - **Visual Refinement** — Polished feedback animations and improved empty states across the workspace.
-
-### 🛠 Metadata Intelligence
-- **Faster Suggestions** — Optimized cross-database schema loading for an even snappier SQL editor experience.
 
 ---
 

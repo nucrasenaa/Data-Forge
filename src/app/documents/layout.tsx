@@ -36,7 +36,7 @@ export default function DocsLayout({
                     </div>
                 </div>
                 <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">
-                    <span>Version 1.4.0</span>
+                    <span>Version 1.4.1</span>
                     <div className="w-1 h-1 rounded-full bg-border" />
                     <span className="px-2 py-0.5 rounded bg-accent/10 text-accent border border-accent/20">Latest</span>
                     <div className="w-1 h-1 rounded-full bg-border" />
@@ -53,7 +53,7 @@ export default function DocsLayout({
                     </section>
 
                     <section>
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 mb-4 px-4">✨ New in v1.4.0</h2>
+                        <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 mb-4 px-4">✨ New in v1.4.1</h2>
                         <div className="space-y-2 px-2">
                             {[
                                 { label: 'Environment Colors', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', icon: Shield },
